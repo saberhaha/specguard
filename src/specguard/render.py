@@ -28,7 +28,9 @@ def render(
     version = (repo_root / "core/version").read_text().strip()
 
     env = Environment(loader=BaseLoader(), undefined=StrictUndefined)
-    env.filters["regex_escape"] = lambda s: re.escape(str(s))
+    # regex_escape is used inside JSON string literals; backslashes must be doubled
+    # so the JSON source is valid (e.g. "design\.md" in JSON must be "design\\.md")
+    env.filters["regex_escape"] = lambda s: re.escape(str(s)).replace("\\", "\\\\")
 
     context = {
         "paths": layout_m.paths,
