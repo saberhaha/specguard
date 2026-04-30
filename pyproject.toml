@@ -1,0 +1,27 @@
+[project]
+name = "specguard"
+version = "0.1.0"
+description = "Project governance scaffold for AI-driven development"
+requires-python = ">=3.11"
+dependencies = [
+    "PyYAML>=6.0",
+    "Jinja2>=3.1",
+]
+
+[project.scripts]
+specguard-render = "specguard.render:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/specguard"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
