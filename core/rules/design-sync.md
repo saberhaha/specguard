@@ -1,0 +1,5 @@
+- 接口、数据结构、模块边界变化 → 必须同步 `{{ paths.design }}` 对应段落（默认动作，不询问）。
+- 编辑 `{{ paths.design }}` 后更新顶部 `Last verified against code` 字段为当前 commit hash。
+- 不允许在 `{{ paths.design }}` 中保留与代码不一致的陈述。
+- mermaid 图与文字描述若不一致，文字为准，同步修图。
+- 写 ADR 后，在 `{{ paths.design }}` 对应章节末尾追加 `（见 ADR-NNNN）`，并在 `{{ paths.decisions_dir }}/README.md` 索引表加一行。
