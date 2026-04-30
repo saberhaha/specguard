@@ -33,10 +33,22 @@ It is not a replacement for spec-driven development tools. It is a **governance 
 
 | Item | State |
 |---|---|
-| Brainstorm | done (2026-04-30) |
-| Slice spec | drafted |
-| Implementation plan | not yet |
-| Code | not yet |
+| Brainstorm | done |
+| Slice spec | done |
+| Implementation plan | done |
+| Code | v0.1.0 |
 | Public release | not yet |
 
 This README will be replaced with a real product README once the MVP is implemented.
+
+## Quickstart (developers)
+
+```bash
+git clone <this repo>
+cd specguard
+uv sync
+uv run pytest
+uv run specguard-render --target claude --layout specguard-default --out dist/claude/default
+```
+
+The rendered plugin is under `dist/claude/<layout>/`. To install locally, copy that directory into your Claude Code plugin path (e.g. `~/.claude/plugins/specguard/`), then in any target project run `/sg:init --ai claude --spec <none|openspec|superpowers>`. Marketplace packaging is out of MVP scope.
