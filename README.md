@@ -1,22 +1,50 @@
 # specguard
 
-> **WIP — design phase only**
+> Project governance scaffold for AI-driven development. Living design + ADR + spec discipline, delivered as a Claude Code plugin (Cursor / Codex coming later).
 
-specguard is a project governance scaffold for AI-driven development. It installs a *living design + ADR* system into a project, plus optional skill/commands/hooks for AI coding agents.
+specguard is:
 
-It is:
-
-- agent-neutral (Claude Code first, Cursor / Codex / generic later)
+- agent-neutral (Claude Code first)
 - spec-tool-neutral (works with OpenSpec, Superpowers, or none)
 - delivered as scaffolding (`/specguard:init`), not a daily CLI
 
-This repository is currently in the design phase. See:
+## Quickstart (users)
 
-- [docs/specguard/design.md](docs/specguard/design.md) — living architecture document (WIP)
-- [docs/specguard/decisions/](docs/specguard/decisions/) — architecture decision records
-- [docs/specguard/specs/](docs/specguard/specs/) — implementation slice specs
+Download a Claude plugin tarball from the latest GitHub Release and unpack it somewhere stable:
 
-The first slice is described in [docs/specguard/specs/2026-04-30-mvp-scaffold-spec.md](docs/specguard/specs/2026-04-30-mvp-scaffold-spec.md).
+```bash
+mkdir -p ~/.local/share/specguard/plugins
+curl -L https://github.com/<org>/specguard/releases/latest/download/specguard-claude-specguard-default-v0.2.0.tar.gz \
+  | tar -xz -C ~/.local/share/specguard/plugins/specguard-default
+```
+
+Run init from inside the target project (a real git repo):
+
+```bash
+claude --plugin-dir ~/.local/share/specguard/plugins/specguard-default \
+  -p '/specguard:init --ai claude --spec none'
+```
+
+`/specguard:init` creates the living design / ADR / spec scaffold, updates `CLAUDE.md`, writes `.specguard/hooks.snippet.json`, and merges hooks into `.claude/settings.json` automatically. Use `--dry-run` to preview without writing.
+
+Run governance check anytime:
+
+```bash
+claude --plugin-dir ~/.local/share/specguard/plugins/specguard-default \
+  -p '/specguard:check'
+```
+
+Upgrade to a new specguard version after downloading a new tarball:
+
+```bash
+claude --plugin-dir ~/.local/share/specguard/plugins/specguard-default \
+  -p '/specguard:upgrade'
+```
+
+Available layouts:
+- `specguard-default` — design/ADR/spec under `docs/specguard/`
+- `superpowers` — design/ADR/spec under `docs/superpowers/`
+- `openspec-sidecar` — design/ADR under `docs/specguard/`, specs under `openspec/`
 
 ## Why
 
@@ -33,22 +61,25 @@ It is not a replacement for spec-driven development tools. It is a **governance 
 
 | Item | State |
 |---|---|
-| Brainstorm | done |
-| Slice spec | done |
-| Implementation plan | done |
-| Code | v0.1.0 |
-| Public release | not yet |
+| MVP scaffold | shipped (v0.1.0) |
+| Auto hook merge + Release tarball | shipped (v0.2.0) |
+| Marketplace | not yet |
+| Cursor / Codex adapter | not yet |
 
-This README will be replaced with a real product README once the MVP is implemented.
+## Development
 
-## Quickstart (developers)
+Render the plugin from source for local dogfood:
 
 ```bash
 git clone <this repo>
 cd specguard
 uv sync
 uv run pytest
-uv run specguard-render --target claude --layout specguard-default --out dist/claude/default
+uv run specguard-render --target claude --layout specguard-default --out dist/claude/specguard-default
+claude --plugin-dir dist/claude/specguard-default -p '/specguard:init --ai claude --spec none'
 ```
 
-The rendered plugin is under `dist/claude/<layout>/`. To dogfood locally, point Claude Code at it for a single session: `claude --plugin-dir dist/claude/<layout> -p '/specguard:init --ai claude --spec <none|openspec|superpowers>'` (run from inside the target project). The init command writes `.specguard/hooks.snippet.json`; manually merge that snippet into `.claude/settings.json` to enable hooks. Marketplace packaging is out of MVP scope; see [decisions/0001-plugin-name-command-namespace.md](docs/specguard/decisions/0001-plugin-name-command-namespace.md) for why commands use the `specguard:` namespace.
+See:
+- [docs/specguard/design.md](docs/specguard/design.md) — living architecture document
+- [docs/specguard/decisions/](docs/specguard/decisions/) — architecture decision records
+- [docs/specguard/specs/](docs/specguard/specs/) — implementation slice specs
