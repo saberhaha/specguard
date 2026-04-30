@@ -4,7 +4,7 @@
 **日期**：2026-04-30
 **拍板者**：用户（@saber，对话日期 2026-04-30，dogfood 验证阶段选择 `/specguard:init` 方案）
 **取代**：—
-**相关**：design.md §待补 / spec docs/specguard/specs/2026-04-30-mvp-scaffold-spec.md §3
+**相关**：[design.md §2](../design.md) / [spec 2026-04-30-mvp-scaffold-spec.md §3](../specs/2026-04-30-mvp-scaffold-spec.md)（已部分 superseded）/ [v0.1.1 dogfood-fix spec](../specs/2026-04-30-v0.1.1-dogfood-fix-spec.md)
 
 ## Context
 
@@ -22,4 +22,5 @@ Claude adapter 不再使用 `commandNamespace` 字段。specguard 的 Claude Cod
 
 - **正面**：plugin manifest 符合 Claude Code 当前校验规则；命令命名与产品名一致。
 - **负面**：命令比原计划 `/sg:*` 更长；原 MVP spec 中关于短前缀的表述需要按此 ADR 修正理解。
-- **同步更新**：README.md、adapter plugin.json 模板、command prompt 文案、render 测试。
+- **同步更新**：README.md、adapter plugin.json 模板、command prompt 文案、render 测试、design.md、MVP spec supersede 标记。
+- **运行时约束**：Claude Code 出于安全考虑不适合让 slash command 自动改写 `.claude/settings.json`；`/specguard:init` 写出 `.specguard/hooks.snippet.json`，由用户手动合并 hooks。

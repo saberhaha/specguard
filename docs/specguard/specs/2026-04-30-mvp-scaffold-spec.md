@@ -1,8 +1,12 @@
 # specguard MVP 脚手架插件设计补充
 
 **日期**：2026-04-30
-**状态**：Draft，待用户 review
-**适用范围**：specguard 独立仓的 MVP。目标是交付一个 Claude Code plugin：`/sg:init`、`/sg:check`、`/sg:upgrade`，并预留多 agent / 多 spec 工具的可插拔架构。
+**状态**：Superseded（部分）by [2026-04-30-v0.1.1-dogfood-fix-spec.md](2026-04-30-v0.1.1-dogfood-fix-spec.md) 与 [decisions/0001-plugin-name-command-namespace.md](../decisions/0001-plugin-name-command-namespace.md)
+**适用范围**：specguard 独立仓的 MVP。目标是交付一个 Claude Code plugin：原计划 `/sg:init`、`/sg:check`、`/sg:upgrade`（见后述 supersede），并预留多 agent / 多 spec 工具的可插拔架构。
+
+> **Superseded 内容**:
+> - 改动点 #6、#7 与 §3 中关于 `/sg:*` 命名的决策被 ADR-0001 推翻 → 实际命令为 `/specguard:init`、`/specguard:check`、`/specguard:upgrade`
+> - §3 / §4 中"`/sg:init` 自动 merge `.claude/settings.json` hooks"被 v0.1.1 spec 推翻 → 实际写出 `.specguard/hooks.snippet.json`，由用户手动 merge
 
 ---
 

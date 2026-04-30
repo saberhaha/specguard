@@ -5,3 +5,9 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+
+# allow project-level Claude Code config to be committed; ignore personal overrides + worktrees
+!.claude/
+!.claude/settings.json
+.claude/settings.local.json
+.claude/worktrees/
