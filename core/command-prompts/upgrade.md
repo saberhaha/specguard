@@ -33,11 +33,33 @@ Will not touch:
 
 5. Ask user to confirm.
 
-6. On confirm, call `specguard.upgrade` from the rendered plugin `runtime/` directory:
+6. On confirm, call `specguard.upgrade` from the rendered plugin `runtime/` directory.
+
+   First, resolve the plugin runtime directory from the environment variable `CLAUDE_PLUGIN_ROOT`. If the variable is not set, stop and tell the user: "CLAUDE_PLUGIN_ROOT is not set — your Claude Code version or plugin runtime does not expose the plugin root. Cannot locate specguard runtime."
+
+   Then, construct the `replacements` dict from the same rendered assets used by init/check — specifically, read each from its current source (rendered prompt embedded sections or plugin dist) before calling the upgrade function:
 
    ```python
-   import sys; sys.path.insert(0, "runtime")
+   # replacements must be built before calling upgrade_project
+   replacements = {
+       "claude_block": <rendered CLAUDE.md block content, text between specguard markers>,
+       "settings_hooks": <rendered hooks JSON snippet content>,
+       "specs_template": <rendered specs/TEMPLATE.md content>,
+       "decisions_template": <rendered decisions/TEMPLATE.md content>,
+       "decisions_readme_rules": <rendered decisions/README.md rule sections content>,
+       "version": <current plugin version string>,
+       "plugin_source": <value from .specguard-version plugin_source field, default "local-dist">,
+   }
+   ```
+
+   Then invoke:
+
+   ```python
+   import os
+   import sys
    from pathlib import Path
+   plugin_root = Path(os.environ["CLAUDE_PLUGIN_ROOT"])
+   sys.path.insert(0, str(plugin_root / "runtime"))
    from specguard.upgrade import upgrade_project, UpgradeConflict
 
    try:

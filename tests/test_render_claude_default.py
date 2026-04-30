@@ -60,6 +60,8 @@ def test_hooks_use_specguard_default_paths(dist: Path):
 def test_init_command_mentions_auto_merge_and_dry_run(dist: Path):
     cmd = (dist / "commands/init.md").read_text()
     assert "--dry-run" in cmd
+    assert "CLAUDE_PLUGIN_ROOT" in cmd
+    assert "tempfile" in cmd
     assert "specguard.hooks_merge" in cmd
     assert "plugin_source" in cmd
 
@@ -68,10 +70,20 @@ def test_check_command_treats_missing_hooks_as_error(dist: Path):
     cmd = (dist / "commands/check.md").read_text()
     assert "missing specguard hooks" in cmd
     assert "error" in cmd.lower()
+    assert "matching `.specguard/hooks.snippet.json`" not in cmd
+    assert "matching .specguard/hooks.snippet.json" not in cmd
 
 
 def test_upgrade_command_mentions_python_runtime(dist: Path):
     cmd = (dist / "commands/upgrade.md").read_text()
     assert "specguard.upgrade" in cmd
+    assert "CLAUDE_PLUGIN_ROOT" in cmd
+    assert "replacements = {" in cmd
+    assert "claude_block" in cmd
+    assert "settings_hooks" in cmd
+    assert "specs_template" in cmd
+    assert "decisions_template" in cmd
+    assert "decisions_readme_rules" in cmd
+    assert "version" in cmd
     assert "plugin_source" in cmd
     assert "manual_patch" in cmd

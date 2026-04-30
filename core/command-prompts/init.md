@@ -43,17 +43,37 @@ If the resolved layout is not the one this command was rendered for (paths in th
 5. Hooks merge for `.claude/settings.json`:
    - Use the embedded JSON below verbatim as the snippet source.
    - Unless `--dry-run`, write it verbatim to `.specguard/hooks.snippet.json`. Create the `.specguard/` directory if needed.
-   - Merge the hooks by invoking the runtime module from the rendered plugin runtime. Use the following Python one-liner (or equivalent short script):
+   - Resolve the plugin runtime directory from the environment variable `CLAUDE_PLUGIN_ROOT`. If the variable is not set, stop and tell the user: "CLAUDE_PLUGIN_ROOT is not set — your Claude Code version or plugin runtime does not expose the plugin root. Cannot locate specguard runtime."
+   - Merge the hooks by invoking the runtime module from the resolved plugin root. Use the following Python snippet (or equivalent short script):
 
      ```python
-     import sys; sys.path.insert(0, "runtime")
+     import os
+     import sys
      from pathlib import Path
+     plugin_root = Path(os.environ["CLAUDE_PLUGIN_ROOT"])
+     sys.path.insert(0, str(plugin_root / "runtime"))
      from specguard.hooks_merge import merge_hooks_file
      result = merge_hooks_file(Path(".claude/settings.json"), Path(".specguard/hooks.snippet.json"), dry_run=False)
      print(result.diff)
      ```
 
-   - If `--dry-run`, call `merge_hooks_file(..., dry_run=True)` and only print the diff.
+   - If `--dry-run`, do **not** write `.specguard/hooks.snippet.json`. Instead, write the embedded hooks JSON to a temporary file and pass that temp path to `merge_hooks_file` with `dry_run=True`:
+
+     ```python
+     import os
+     import sys
+     import tempfile
+     from pathlib import Path
+     plugin_root = Path(os.environ["CLAUDE_PLUGIN_ROOT"])
+     sys.path.insert(0, str(plugin_root / "runtime"))
+     from specguard.hooks_merge import merge_hooks_file
+     with tempfile.NamedTemporaryFile(suffix=".json", mode="w", delete=False) as tmp:
+         tmp.write(HOOKS_JSON_CONTENT)
+         tmp_path = Path(tmp.name)
+     result = merge_hooks_file(Path(".claude/settings.json"), tmp_path, dry_run=True)
+     print(result.diff)
+     ```
+
    - On invalid settings JSON or `HookMergeError`, stop and ask the user to fix the issue manually before retrying.
 
 6. Write `.specguard-version` (project root) verbatim, substituting only the `installed_at` field with the current ISO 8601 UTC timestamp:
