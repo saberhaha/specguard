@@ -7,6 +7,9 @@
 | 编号 | 标题 | 状态 | 关联 |
 |---|---|---|---|
 | [0001](0001-plugin-name-command-namespace.md) | 使用 plugin name 作为 Claude slash command 命名空间 | Accepted | spec §3、README、adapter plugin.json |
+| [0002](0002-init-auto-merge-hooks.md) | `/specguard:init` 自动合并 hooks 到 `.claude/settings.json` | Accepted | design §3.1、§3.2、§3.3、§4 |
+| [0003](0003-distribution-via-github-release.md) | 通过 GitHub Release tarball 分发 Claude plugin | Accepted | design §2、§3.1、§3.3、§6 |
+| [0004](0004-python-modules-for-runtime-algorithms.md) | 将 init hooks 合并与 upgrade marker 替换下沉为 Python 模块 | Accepted | design §3.1、§3.3、§5 |
 
 后续若出现以下情况新增 ADR：
 
