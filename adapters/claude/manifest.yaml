@@ -1,0 +1,37 @@
+target: claude
+description: Claude Code plugin adapter for specguard
+capabilities:
+  - skills
+  - commands
+  - hooks
+  - plugin
+
+renders:
+  - source: plugin/.claude-plugin/plugin.json.tpl
+    output: .claude-plugin/plugin.json
+  - source: plugin/skills/design-governance/SKILL.md.tpl
+    output: skills/design-governance/SKILL.md
+    inject:
+      - source: core/rules/five-laws.md
+        marker: <!-- inject:five-laws -->
+      - source: core/rules/adr-checklist.md
+        marker: <!-- inject:adr-checklist -->
+      - source: core/rules/design-sync.md
+        marker: <!-- inject:design-sync -->
+  - source: plugin/commands/init.md.tpl
+    output: commands/init.md
+    inject:
+      - source: core/command-prompts/init.md
+        marker: <!-- inject:prompt -->
+  - source: plugin/commands/check.md.tpl
+    output: commands/check.md
+    inject:
+      - source: core/command-prompts/check.md
+        marker: <!-- inject:prompt -->
+  - source: plugin/commands/upgrade.md.tpl
+    output: commands/upgrade.md
+    inject:
+      - source: core/command-prompts/upgrade.md
+        marker: <!-- inject:prompt -->
+  - source: plugin/hooks/settings.json.snippet.tpl
+    output: hooks/settings.json.snippet
