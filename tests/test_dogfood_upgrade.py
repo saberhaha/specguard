@@ -83,11 +83,17 @@ def test_upgrade_conflict_when_claude_marker_missing(tmp_path: Path):
     setup_project(tmp_path)
     (tmp_path / "CLAUDE.md").write_text("no markers\n")
 
-    with pytest.raises(UpgradeConflict):
+    with pytest.raises(UpgradeConflict) as exc:
         upgrade_project(tmp_path, replacements())
 
     assert (tmp_path / "CLAUDE.md").read_text() == "no markers\n"
     assert (tmp_path / "docs/specguard/specs/TEMPLATE.md").read_text() == "old specs template\n"
+
+    patch = exc.value.manual_patch
+    assert patch, "manual_patch must be non-empty"
+    assert "CLAUDE.md" in patch
+    assert "specguard:start" in patch
+    assert replacements()["claude_block"] in patch
 
 
 def test_upgrade_no_write_on_decisions_readme_conflict(tmp_path: Path):
@@ -95,9 +101,15 @@ def test_upgrade_no_write_on_decisions_readme_conflict(tmp_path: Path):
     setup_project(tmp_path)
     (tmp_path / "docs/specguard/decisions/README.md").write_text("# index\nno markers\n")
 
-    with pytest.raises(UpgradeConflict):
+    with pytest.raises(UpgradeConflict) as exc:
         upgrade_project(tmp_path, replacements())
 
     # 所有目标文件保持原始内容
     assert (tmp_path / "CLAUDE.md").read_text() == "before\n<!-- specguard:start -->\nold block\n<!-- specguard:end -->\nafter\n"
     assert (tmp_path / "docs/specguard/specs/TEMPLATE.md").read_text() == "old specs template\n"
+
+    patch = exc.value.manual_patch
+    assert patch, "manual_patch must be non-empty"
+    assert "README.md" in patch
+    assert "specguard:rules:start" in patch
+    assert replacements()["decisions_readme_rules"] in patch

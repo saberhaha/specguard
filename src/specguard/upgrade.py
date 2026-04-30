@@ -12,6 +12,10 @@ from specguard.hooks_merge import merge_hooks
 class UpgradeConflict(ValueError):
     """Raised when a required marker is missing or reversed in a managed file."""
 
+    def __init__(self, message: str, manual_patch: str):
+        super().__init__(message)
+        self.manual_patch = manual_patch
+
 
 @dataclass(frozen=True)
 class UpgradeResult:
@@ -119,16 +123,32 @@ def _replace_between_markers(text: str, start_marker: str, end_marker: str, new_
     end_idx = text.find(end_marker)
 
     if start_idx == -1 or end_idx == -1:
+        patch = (
+            f"# Manual patch for {source}\n"
+            f"Insert the following block at an appropriate location:\n"
+            f"{start_marker}\n"
+            f"{new_content}"
+            f"{end_marker}\n"
+        )
         raise UpgradeConflict(
             f"required markers not found in {source}: "
             f"start={start_marker!r} found={start_idx != -1}, "
-            f"end={end_marker!r} found={end_idx != -1}"
+            f"end={end_marker!r} found={end_idx != -1}",
+            manual_patch=patch,
         )
 
     if end_idx < start_idx:
+        patch = (
+            f"# Manual patch for {source}\n"
+            f"Markers appear in reversed order. Re-insert the block in the correct order:\n"
+            f"{start_marker}\n"
+            f"{new_content}"
+            f"{end_marker}\n"
+        )
         raise UpgradeConflict(
             f"markers appear in reversed order in {source}: "
-            f"start_marker at {start_idx}, end_marker at {end_idx}"
+            f"start_marker at {start_idx}, end_marker at {end_idx}",
+            manual_patch=patch,
         )
 
     # Find end of the start marker line (include its trailing newline)
