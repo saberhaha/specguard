@@ -32,10 +32,30 @@ def render(
     # so the JSON source is valid (e.g. "design\.md" in JSON must be "design\\.md")
     env.filters["regex_escape"] = lambda s: re.escape(str(s)).replace("\\", "\\\\")
 
+    design_dir = Path(layout_m.paths["design"]).parent
+
+    def _relative_to_design(target: str) -> str:
+        try:
+            return str(Path(target).relative_to(design_dir))
+        except ValueError:
+            # target lives outside design's directory; fall back to a literal path
+            return str(target)
+
+    env.filters["relative_to_design"] = _relative_to_design
+
     context = {
         "paths": layout_m.paths,
         "specguard_version": version,
+        "layout_name": layout_m.name,
     }
+
+    policy_marker = "<!-- inject:policy -->"
+    if layout_m.inject_policies:
+        policy_text = "\n\n".join(
+            (repo_root / p).read_text().rstrip() for p in layout_m.inject_policies
+        )
+    else:
+        policy_text = ""
 
     for entry in adapter_m.renders:
         src_path = repo_root / "adapters" / target / entry["source"]
@@ -46,7 +66,12 @@ def render(
 
         for inj in entry.get("inject", []) or []:
             inj_text = (repo_root / inj["source"]).read_text()
+            if inj.get("raw"):
+                inj_text = "{% raw %}" + inj_text + "{% endraw %}"
             text = text.replace(inj["marker"], inj_text)
+
+        # layout-specific policy is wired into init prompt via marker
+        text = text.replace(policy_marker, policy_text)
 
         rendered = env.from_string(text).render(**context)
         out_path.write_text(rendered)

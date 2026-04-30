@@ -1,6 +1,6 @@
 ---
 description: Check specguard governance state
-argument-hint: [semantic]
+argument-hint: "[semantic]"
 ---
 
 <!-- inject:prompt -->

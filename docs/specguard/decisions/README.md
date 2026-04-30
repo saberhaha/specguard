@@ -4,7 +4,11 @@
 
 ## 当前 ADR
 
-MVP 设计阶段尚未产生独立 ADR。若后续出现以下情况才新增 ADR：
+| 编号 | 标题 | 状态 | 关联 |
+|---|---|---|---|
+| [0001](0001-plugin-name-command-namespace.md) | 使用 plugin name 作为 Claude slash command 命名空间 | Accepted | spec §3、README、adapter plugin.json |
+
+后续若出现以下情况新增 ADR：
 
 1. 改变公开命令语义或命名
 2. 改变核心目录/布局抽象

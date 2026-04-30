@@ -9,18 +9,19 @@ Optional positional: `semantic` (generates AI review package; does not call any 
 
 ## Structural checks
 
-1. `{{ paths.design }}` exists and is the only design file (no other `*-design.md` under specs).
-2. No file matching `{{ paths.specs_dir }}/*-design.md`.
+1. `{{ paths.design }}` exists.
+2. No file matching `{{ paths.specs_dir }}/*-design.md` for default/openspec layouts. For `superpowers` layout, treat pre-existing `*-design.md` files as warnings (legacy superpowers snapshots) rather than errors; new work should use `*-spec.md`.
 3. `{{ paths.decisions_dir }}/README.md` exists.
 4. Every ADR file matches `^[0-9]{4}-[a-z0-9-]+\.md$` or is `README.md` / `TEMPLATE.md`.
 5. ADR numbers are contiguous (no gaps).
 6. Every ADR appears in `{{ paths.decisions_dir }}/README.md` index.
 7. Every ADR-NNNN referenced in `{{ paths.design }}` exists.
 8. Every `Superseded by ADR-NNNN` target exists.
-9. Every `*.md` under `{{ paths.specs_dir }}` (excluding TEMPLATE.md) contains the heading `## ADR 级别决策识别`.
+9. Every `*.md` under `{{ paths.specs_dir }}` (excluding `TEMPLATE.md` and pre-existing files older than `.specguard-version` `installed_at` if available) contains the heading `## ADR 级别决策识别`. For `superpowers` layout, files matching `*-design.md` are legacy snapshots and exempt from this requirement (warning only).
 10. `CLAUDE.md` contains `<!-- specguard:start -->` and `<!-- specguard:end -->`.
-11. `.claude/settings.json` contains hooks tagged with `statusMessage` prefix `specguard:` matching adapter manifest.
-12. `.specguard-version` exists.
+11. `.specguard/hooks.snippet.json` exists.
+12. `.claude/settings.json` contains hooks tagged with `statusMessage` prefix `specguard:` matching `.specguard/hooks.snippet.json`; if missing, report a warning with manual merge instructions, not a hard error.
+13. `.specguard-version` exists.
 
 If layout is `openspec-sidecar`, additionally:
 - For each archived OpenSpec change, if its `design.md` mentions a decision, warn if `decisions/` has no corresponding ADR.

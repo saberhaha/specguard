@@ -8,7 +8,7 @@ It is:
 
 - agent-neutral (Claude Code first, Cursor / Codex / generic later)
 - spec-tool-neutral (works with OpenSpec, Superpowers, or none)
-- delivered as scaffolding (`/sg:init`), not a daily CLI
+- delivered as scaffolding (`/specguard:init`), not a daily CLI
 
 This repository is currently in the design phase. See:
 
@@ -51,4 +51,4 @@ uv run pytest
 uv run specguard-render --target claude --layout specguard-default --out dist/claude/default
 ```
 
-The rendered plugin is under `dist/claude/<layout>/`. To install locally, copy that directory into your Claude Code plugin path (e.g. `~/.claude/plugins/specguard/`), then in any target project run `/sg:init --ai claude --spec <none|openspec|superpowers>`. Marketplace packaging is out of MVP scope.
+The rendered plugin is under `dist/claude/<layout>/`. To dogfood locally, point Claude Code at it for a single session: `claude --plugin-dir dist/claude/<layout> -p '/specguard:init --ai claude --spec <none|openspec|superpowers>'` (run from inside the target project). The init command writes `.specguard/hooks.snippet.json`; manually merge that snippet into `.claude/settings.json` to enable hooks. Marketplace packaging is out of MVP scope; see [decisions/0001-plugin-name-command-namespace.md](docs/specguard/decisions/0001-plugin-name-command-namespace.md) for why commands use the `specguard:` namespace.

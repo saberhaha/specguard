@@ -15,10 +15,10 @@ def dist(tmp_path: Path) -> Path:
     return out
 
 
-def test_plugin_json_namespace(dist: Path):
+def test_plugin_json_manifest(dist: Path):
     data = json.loads((dist / ".claude-plugin/plugin.json").read_text())
     assert data["name"] == "specguard"
-    assert data["commandNamespace"] == "sg"
+    assert "commandNamespace" not in data
 
 
 def test_skill_contains_three_injected_sections(dist: Path):
