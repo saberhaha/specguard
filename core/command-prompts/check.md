@@ -20,7 +20,7 @@ Optional positional: `semantic` (generates AI review package; does not call any 
 9. Every `*.md` under `{{ paths.specs_dir }}` (excluding `TEMPLATE.md` and pre-existing files older than `.specguard-version` `installed_at` if available) contains the heading `## ADR 级别决策识别`. For `superpowers` layout, files matching `*-design.md` are legacy snapshots and exempt from this requirement (warning only).
 10. `CLAUDE.md` contains `<!-- specguard:start -->` and `<!-- specguard:end -->`.
 11. `.specguard/hooks.snippet.json` exists.
-12. `.claude/settings.json` contains hooks tagged with `statusMessage` prefix `specguard:` matching `.specguard/hooks.snippet.json`; if missing, report a warning with manual merge instructions, not a hard error.
+12. `.claude/settings.json` must contain hooks tagged with `statusMessage` prefix `specguard:` matching `.specguard/hooks.snippet.json`. If missing specguard hooks are detected, report this as an **error** (not a warning); include the exact message: "missing specguard hooks — run `/specguard:init` to auto-merge, or manually merge `.specguard/hooks.snippet.json` into `.claude/settings.json`".
 13. `.specguard-version` exists.
 
 If layout is `openspec-sidecar`, additionally:

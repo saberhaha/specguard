@@ -10,6 +10,7 @@ User-provided: $ARGUMENTS
 Supported flags:
 - `--ai <claude|cursor|codex|generic|auto>`   default: auto
 - `--spec <none|openspec|superpowers|auto>`   default: auto
+- `--dry-run`                                 default: false; print planned file writes and hook merge diff without writing files
 
 If the resolved layout is not the one this command was rendered for (paths in this prompt assume `{{ paths.design }}`), tell the user to re-install the matching layout's plugin instead of trying to remap paths at runtime.
 
@@ -26,7 +27,7 @@ If the resolved layout is not the one this command was rendered for (paths in th
    - specs_dir: `{{ paths.specs_dir }}`
    - plans_dir: `{{ paths.plans_dir }}`
 
-3. For each of the four target files below: if it exists, skip and report; if missing, create it with the embedded content. Use `Write` (do not modify existing files in this step).
+3. For each of the four target files below: if it exists, skip and report; if missing and not `--dry-run`, create it with the embedded content. If `--dry-run`, report each missing file as would-create and do not write it. Use `Write` (do not modify existing files in this step).
    - `{{ paths.design }}` ← embedded section "design.md template"
    - `{{ paths.decisions_dir }}/README.md` ← embedded section "decisions README template"
    - `{{ paths.decisions_dir }}/TEMPLATE.md` ← embedded section "ADR template"
@@ -37,11 +38,23 @@ If the resolved layout is not the one this command was rendered for (paths in th
    - If it exists and already contains `<!-- specguard:start -->` / `<!-- specguard:end -->` markers, replace the block content (including markers) with the new block.
    - If it exists without markers, prepend the specguard block to the top, leaving existing content untouched below.
    - Do not touch any content outside the markers.
+   - If `--dry-run`, report the CLAUDE.md diff and do not write.
 
-5. Hooks snippet for `.claude/settings.json`:
-   - Write the embedded JSON below verbatim to `.specguard/hooks.snippet.json`. Create the `.specguard/` directory if needed.
-   - Do **not** modify the existing `.claude/settings.json`. Claude Code restricts that file for safety; auto-merging it from a slash command is not reliable.
-   - In your final report, instruct the user to manually merge `.specguard/hooks.snippet.json` into `.claude/settings.json` (top-level `hooks` key, additive merge by event name; entries are idempotent because each carries a `statusMessage` starting with `specguard:`).
+5. Hooks merge for `.claude/settings.json`:
+   - Use the embedded JSON below verbatim as the snippet source.
+   - Unless `--dry-run`, write it verbatim to `.specguard/hooks.snippet.json`. Create the `.specguard/` directory if needed.
+   - Merge the hooks by invoking the runtime module from the rendered plugin runtime. Use the following Python one-liner (or equivalent short script):
+
+     ```python
+     import sys; sys.path.insert(0, "runtime")
+     from pathlib import Path
+     from specguard.hooks_merge import merge_hooks_file
+     result = merge_hooks_file(Path(".claude/settings.json"), Path(".specguard/hooks.snippet.json"), dry_run=False)
+     print(result.diff)
+     ```
+
+   - If `--dry-run`, call `merge_hooks_file(..., dry_run=True)` and only print the diff.
+   - On invalid settings JSON or `HookMergeError`, stop and ask the user to fix the issue manually before retrying.
 
 6. Write `.specguard-version` (project root) verbatim, substituting only the `installed_at` field with the current ISO 8601 UTC timestamp:
    ```toml
@@ -50,13 +63,15 @@ If the resolved layout is not the one this command was rendered for (paths in th
    spec = "{{ layout_name }}"
    layout = "{{ layout_name }}"
    installed_at = "<ISO 8601 UTC now>"
+   plugin_source = "local-dist"
    ```
 
 7. Output a structured report:
    - Created: <files>
    - Updated: <files>
    - Skipped: <files with reason>
-   - Next steps: read `{{ paths.design }}`, then merge `.specguard/hooks.snippet.json` into `.claude/settings.json`, then run `/specguard:check`.
+   - Hooks: auto-merged specguard hooks into `.claude/settings.json` via `specguard.hooks_merge`.
+   - Next steps: read `{{ paths.design }}`, then run `/specguard:check`.
 
 ---
 

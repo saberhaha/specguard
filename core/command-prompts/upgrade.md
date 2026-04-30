@@ -33,9 +33,23 @@ Will not touch:
 
 5. Ask user to confirm.
 
-6. On confirm, replace marker contents only. If a marker is missing in a target file:
-   - Do NOT auto-insert.
-   - Report conflict and offer options: insert new block / show manual patch / skip.
+6. On confirm, call `specguard.upgrade` from the rendered plugin `runtime/` directory:
+
+   ```python
+   import sys; sys.path.insert(0, "runtime")
+   from pathlib import Path
+   from specguard.upgrade import upgrade_project, UpgradeConflict
+
+   try:
+       result = upgrade_project(Path("."), replacements)
+       print("Upgraded:", result.changed)
+   except UpgradeConflict as exc:
+       print(exc.manual_patch)  # output manual_patch to the user for manual resolution
+   ```
+
+   If `.specguard-version` is missing `plugin_source`, treat it as `local-dist` and write it back to the file.
+   If `UpgradeConflict` is raised for any marker region, output `exc.manual_patch` and ask the user to apply the patch manually before retrying.
+   Files outside markers are never touched.
 
 7. Update `.specguard-version` with new version.
 

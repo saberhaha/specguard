@@ -55,3 +55,23 @@ def test_hooks_use_specguard_default_paths(dist: Path):
     snippet = (dist / "hooks/settings.json.snippet").read_text()
     assert "docs/specguard/specs" in snippet
     assert "docs/specguard/decisions" in snippet
+
+
+def test_init_command_mentions_auto_merge_and_dry_run(dist: Path):
+    cmd = (dist / "commands/init.md").read_text()
+    assert "--dry-run" in cmd
+    assert "specguard.hooks_merge" in cmd
+    assert "plugin_source" in cmd
+
+
+def test_check_command_treats_missing_hooks_as_error(dist: Path):
+    cmd = (dist / "commands/check.md").read_text()
+    assert "missing specguard hooks" in cmd
+    assert "error" in cmd.lower()
+
+
+def test_upgrade_command_mentions_python_runtime(dist: Path):
+    cmd = (dist / "commands/upgrade.md").read_text()
+    assert "specguard.upgrade" in cmd
+    assert "plugin_source" in cmd
+    assert "manual_patch" in cmd
