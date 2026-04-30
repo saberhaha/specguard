@@ -10,7 +10,7 @@ Initial design + scaffolding release.
 - core: init/check/upgrade command prompts
 - core: openspec / superpowers integration policies
 - layouts: specguard-default, superpowers, openspec-sidecar
-- adapters/claude: plugin.json, design-governance skill, three commands, five hooks snippet
+- adapters/claude: plugin.json, design-governance skill, three commands, hooks snippet (4 events)
 - src/specguard: manifest parser, render pipeline
 - tests: manifest parser, three layout renders, dogfood path check
 
