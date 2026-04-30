@@ -47,3 +47,13 @@ def test_render_substitutes_version(tmp_path: Path):
 def test_render_unknown_layout_raises(tmp_path: Path):
     with pytest.raises(FileNotFoundError):
         render(repo_root=REPO, target="claude", layout="does-not-exist", out_dir=tmp_path)
+
+
+def test_render_includes_runtime_modules(tmp_path: Path):
+    out = tmp_path / "dist"
+    render(repo_root=REPO, target="claude", layout="specguard-default", out_dir=out)
+    assert (out / "runtime/specguard/__init__.py").is_file()
+    assert (out / "runtime/specguard/hooks_merge.py").is_file()
+    assert (out / "runtime/specguard/upgrade.py").is_file()
+    src_text = (REPO / "src/specguard/hooks_merge.py").read_text()
+    assert (out / "runtime/specguard/hooks_merge.py").read_text() == src_text

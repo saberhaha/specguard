@@ -76,6 +76,11 @@ def render(
         rendered = env.from_string(text).render(**context)
         out_path.write_text(rendered)
 
+    runtime_out = out_dir / "runtime/specguard"
+    runtime_out.mkdir(parents=True, exist_ok=True)
+    for name in ("__init__.py", "hooks_merge.py", "upgrade.py"):
+        (runtime_out / name).write_text((repo_root / "src/specguard" / name).read_text())
+
 
 def main() -> None:  # entry point: specguard-render
     import argparse
