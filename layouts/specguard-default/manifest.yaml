@@ -1,0 +1,10 @@
+name: specguard-default
+description: Default layout for projects without an existing spec tool.
+detection:
+  none: true
+paths:
+  design: docs/specguard/design.md
+  decisions_dir: docs/specguard/decisions
+  specs_dir: docs/specguard/specs
+  plans_dir: docs/specguard/plans
+inject_policies: []

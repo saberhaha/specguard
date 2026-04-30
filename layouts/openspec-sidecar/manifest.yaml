@@ -1,0 +1,12 @@
+name: openspec-sidecar
+description: SpecGuard sidecar for projects using OpenSpec. specguard manages design.md/ADR; openspec keeps its own structure.
+detection:
+  exists: openspec
+paths:
+  design: docs/specguard/design.md
+  decisions_dir: docs/specguard/decisions
+  specs_dir: openspec/specs
+  plans_dir: docs/specguard/plans
+  changes_dir: openspec/changes
+inject_policies:
+  - core/policies/with-openspec.md

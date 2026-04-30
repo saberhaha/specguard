@@ -1,0 +1,11 @@
+name: superpowers
+description: Layout for projects already using superpowers skill suite.
+detection:
+  exists: docs/superpowers
+paths:
+  design: docs/superpowers/design.md
+  decisions_dir: docs/superpowers/decisions
+  specs_dir: docs/superpowers/specs
+  plans_dir: docs/superpowers/plans
+inject_policies:
+  - core/policies/with-superpowers.md
