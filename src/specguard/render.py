@@ -25,7 +25,7 @@ def render(
     layout_m = LayoutManifest.load(layout_manifest_path)
     adapter_m = AdapterManifest.load(adapter_manifest_path)
 
-    version = (repo_root / "core/version").read_text().strip()
+    version = (repo_root / "core/version").read_text(encoding="utf-8").strip()
 
     env = Environment(loader=BaseLoader(), undefined=StrictUndefined)
     # regex_escape is used inside JSON string literals; backslashes must be doubled
@@ -52,7 +52,7 @@ def render(
     policy_marker = "<!-- inject:policy -->"
     if layout_m.inject_policies:
         policy_text = "\n\n".join(
-            (repo_root / p).read_text().rstrip() for p in layout_m.inject_policies
+            (repo_root / p).read_text(encoding="utf-8").rstrip() for p in layout_m.inject_policies
         )
     else:
         policy_text = ""
@@ -62,10 +62,10 @@ def render(
         out_path = out_dir / entry["output"]
         out_path.parent.mkdir(parents=True, exist_ok=True)
 
-        text = src_path.read_text()
+        text = src_path.read_text(encoding="utf-8")
 
         for inj in entry.get("inject", []) or []:
-            inj_text = (repo_root / inj["source"]).read_text()
+            inj_text = (repo_root / inj["source"]).read_text(encoding="utf-8")
             if inj.get("raw"):
                 inj_text = "{% raw %}" + inj_text + "{% endraw %}"
             text = text.replace(inj["marker"], inj_text)
@@ -74,12 +74,12 @@ def render(
         text = text.replace(policy_marker, policy_text)
 
         rendered = env.from_string(text).render(**context)
-        out_path.write_text(rendered)
+        out_path.write_text(rendered, encoding="utf-8")
 
     runtime_out = out_dir / "runtime/specguard"
     runtime_out.mkdir(parents=True, exist_ok=True)
     for name in ("__init__.py", "hooks_merge.py", "upgrade.py"):
-        (runtime_out / name).write_text((repo_root / "src/specguard" / name).read_text())
+        (runtime_out / name).write_text((repo_root / "src/specguard" / name).read_text(encoding="utf-8"), encoding="utf-8")
 
 
 def main() -> None:  # entry point: specguard-render
