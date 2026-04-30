@@ -16,6 +16,8 @@ def test_release_workflow_builds_three_layout_tarballs():
         assert layout in text
     assert "tar -czf" in text
     assert "softprops/action-gh-release" in text
+    assert "contents: write" in text
+    assert "uv sync --frozen" in text
 
 
 def test_core_version_is_v0_2_0():

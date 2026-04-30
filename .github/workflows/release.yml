@@ -8,10 +8,12 @@ on:
 jobs:
   build-plugin-artifacts:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
-      - run: uv sync
+      - run: uv sync --frozen
       - run: uv run pytest
       - name: Render and package layouts
         run: |
