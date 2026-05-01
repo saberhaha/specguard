@@ -1,6 +1,6 @@
 # specguard 设计（Living Document）
 
-**Last verified against code**: 2026-05-01 @ commit `cc2a3c4`
+**Last verified against code**: 2026-05-01 @ commit `3a04488`
 **Authoritative for**: 全文
 **ADR 索引**: [decisions/README.md](decisions/README.md)
 
@@ -62,7 +62,7 @@ agent-neutral + layout-neutral 治理资产，路径全部使用 `{{ paths.* }}`
 2. `plugin/skills/design-governance/SKILL.md.tpl` → `skills/design-governance/SKILL.md`，注入 5 laws / ADR checklist / design-sync
 3. `plugin/commands/init.md.tpl` → `commands/init.md`，注入 prompt + 5 laws + ADR checklist + design-sync + policy + 4 个 template（`raw`）+ hooks snippet
 4. `plugin/commands/check.md.tpl` → `commands/check.md`，注入 prompt
-5. `plugin/commands/upgrade.md.tpl` → `commands/upgrade.md`，注入 prompt
+5. `plugin/commands/upgrade.md.tpl` → `commands/upgrade.md`，注入 prompt + 5 laws / ADR checklist / design-sync + 4 个 template（`raw`）+ hooks snippet；upgrade prompt 由这些 embedded sections 构造 `upgrade_project()` 的 replacements（见 [ADR-0004](decisions/0004-python-modules-for-runtime-algorithms.md)）
 6. `plugin/hooks/settings.json.snippet.tpl` → `hooks/settings.json.snippet`
 
 **关键决定**：plugin name = `specguard`，**没有** `commandNamespace` 字段，因此 Claude Code 的 slash 命令固定为 `/specguard:init`、`/specguard:check`、`/specguard:upgrade`（见 [ADR-0001](decisions/0001-plugin-name-command-namespace.md)）。
@@ -92,7 +92,7 @@ agent-neutral + layout-neutral 治理资产，路径全部使用 `{{ paths.* }}`
 3. 用 prompt 内嵌的 4 个 template 写出缺失的 design.md / decisions README+TEMPLATE / specs/TEMPLATE.md
 4. 在 `CLAUDE.md` 顶部插入或替换 `<!-- specguard:start --> ... <!-- specguard:end -->` 块（块内含 5 laws / ADR checklist / design-sync / 选中 layout 的 policy）
 5. 写出 `.specguard/hooks.snippet.json`，并按 `statusMessage` 前缀 `specguard:` 自动幂等合并到 `.claude/settings.json`；支持 `--dry-run` 仅打印 diff 不落盘（见 [ADR-0002](decisions/0002-init-auto-merge-hooks.md)，推翻 [ADR-0001](decisions/0001-plugin-name-command-namespace.md) Consequences 中"不自动改 settings.json"约束）
-6. 写出 `.specguard-version`（`specguard_version`、`agent`、`spec=layout_name`、`layout=layout_name`、`installed_at`、`plugin_source` ∈ {`github-release-vX.Y.Z`, `local-dist`}）（见 [ADR-0003](decisions/0003-distribution-via-github-release.md)）
+6. 写出 `.specguard-version`（`specguard_version`、`agent`、`spec=layout_name`、`layout=layout_name`、`installed_at`、`plugin_source` ∈ {`github-release-vX.Y.Z`, `local-dist`}）；`plugin_source` 通过 plugin root 下的 `.plugin_source` marker 识别 release tarball，缺失时 fallback 到 `local-dist`（见 [ADR-0003](decisions/0003-distribution-via-github-release.md)）
 
 ### `/specguard:check`
 
@@ -109,7 +109,7 @@ agent-neutral + layout-neutral 治理资产，路径全部使用 `{{ paths.* }}`
 4. `{{ paths.decisions_dir }}/TEMPLATE.md`
 5. `{{ paths.decisions_dir }}/README.md` 规则段
 
-对 v0.1.x（`.specguard-version` 缺 `plugin_source`）的项目按 legacy local install 处理，升级后补写 `plugin_source = "local-dist"`（见 [ADR-0003](decisions/0003-distribution-via-github-release.md)）。
+对 v0.1.x（`.specguard-version` 缺 `plugin_source`）的项目按 legacy local install 处理，升级后补写 `plugin_source = "local-dist"`（见 [ADR-0003](decisions/0003-distribution-via-github-release.md)）。v0.1.x 的 `decisions/README.md` 不含 `<!-- specguard:rules:start -->` / `<!-- specguard:rules:end -->` marker；升级时会触发 `UpgradeConflict.manual_patch`，由用户显式复制 patch 后重试。
 
 ---
 
@@ -135,15 +135,15 @@ agent-neutral + layout-neutral 治理资产，路径全部使用 `{{ paths.* }}`
 - [test_smoke.py](../../tests/test_smoke.py) — package 可 import
 - [test_manifest.py](../../tests/test_manifest.py) — LayoutManifest / AdapterManifest 解析 + 缺字段错误
 - [test_render_basic.py](../../tests/test_render_basic.py) — render 产物存在 / inject 替换 / 路径替换 / version 替换 / 未知 layout 抛错 / runtime 模块复制到 dist
-- [test_render_claude_default.py](../../tests/test_render_claude_default.py) — 8 项断言：plugin.json 无 commandNamespace、SKILL 三段注入、commands frontmatter、hooks snippet 是合法 JSON、hooks 含正确 paths、init 含 `--dry-run` + `specguard.hooks_merge` + `CLAUDE_PLUGIN_ROOT` + tempfile、check 把缺失 hooks 当 error、upgrade 含 `specguard.upgrade` + `replacements = {` + `manual_patch`
+- [test_render_claude_default.py](../../tests/test_render_claude_default.py) — 9 项断言：plugin.json 无 commandNamespace、SKILL 三段注入、commands frontmatter、hooks snippet 是合法 JSON、hooks 含正确 paths、init 含 `--dry-run` + `specguard.hooks_merge` + `CLAUDE_PLUGIN_ROOT` + tempfile + `.plugin_source` marker 读取、check 把缺失 hooks 当 error、upgrade 含 `specguard.upgrade` + `replacements = {` + `manual_patch`、upgrade command 嵌入 CLAUDE block / decisions README rules marker / hooks snippet 且无 `<!-- inject:` 残留
 - [test_render_claude_openspec.py](../../tests/test_render_claude_openspec.py) — 2 项断言
 - [test_render_claude_superpowers.py](../../tests/test_render_claude_superpowers.py) — 1 项断言
 - [test_dogfood_guard_ghost.py](../../tests/test_dogfood_guard_ghost.py) — guard-ghost 路径结构匹配（guard-ghost 不在则 skip）
 - [test_init_merge_hooks.py](../../tests/test_init_merge_hooks.py) — hooks 合并算法 / 幂等 / dry-run / 非法 JSON 不覆盖 / 保留非 specguard 条目
-- [test_dogfood_upgrade.py](../../tests/test_dogfood_upgrade.py) — 5 marker upgrade / marker 缺失 conflict 不写 / `.specguard-version` legacy 补 `plugin_source` / `UpgradeConflict.manual_patch` 含路径 + marker + 新内容
-- [test_release_workflow.py](../../tests/test_release_workflow.py) — `.github/workflows/release.yml` 监听 `v*` tag、覆盖 3 个 layout、`tar -czf`、`softprops/action-gh-release`、`contents: write` 权限、`uv sync --frozen`、`core/version` 等于 `0.2.0`
+- [test_dogfood_upgrade.py](../../tests/test_dogfood_upgrade.py) — 5 marker upgrade / marker 缺失或文件缺失 conflict 不写 / no-op 时 `changed=False` 且不改 mtime / `.specguard-version` legacy 补 `plugin_source` / `UpgradeConflict.manual_patch` 含路径 + marker + 新内容
+- [test_release_workflow.py](../../tests/test_release_workflow.py) — `.github/workflows/release.yml` 监听 `v*` tag、覆盖 3 个 layout、写 `.plugin_source = github-release-v${version}`、tag 与 `core/version` 校验、`tar -czf`、`softprops/action-gh-release`、`contents: write` 权限、`uv sync --frozen`、`core/version` 等于 `0.2.0`
 
-合计 35 测试，全绿是构建产物可发布的硬条件。
+合计 42 测试，全绿是构建产物可发布的硬条件。
 
 ---
 
