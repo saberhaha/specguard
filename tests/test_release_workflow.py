@@ -23,3 +23,16 @@ def test_release_workflow_builds_three_layout_tarballs():
 def test_core_version_is_v0_2_0():
     version = (REPO / "core/version").read_text().strip()
     assert version == "0.2.0"
+
+
+def test_release_workflow_writes_plugin_source_marker():
+    workflow_path = REPO / ".github/workflows/release.yml"
+    text = workflow_path.read_text()
+    assert 'echo "github-release-v${version}" > "${out}/.plugin_source"' in text
+
+
+def test_release_workflow_has_tag_version_guard():
+    workflow_path = REPO / ".github/workflows/release.yml"
+    text = workflow_path.read_text()
+    assert "Verify tag matches core/version" in text
+    assert '[ "${ref#v}" != "${version}" ]' in text

@@ -76,14 +76,23 @@ If the resolved layout is not the one this command was rendered for (paths in th
 
    - On invalid settings JSON or `HookMergeError`, stop and ask the user to fix the issue manually before retrying.
 
-6. Write `.specguard-version` (project root) verbatim, substituting only the `installed_at` field with the current ISO 8601 UTC timestamp:
+6. Write `.specguard-version` (project root) verbatim, substituting `installed_at` with the current ISO 8601 UTC timestamp and `plugin_source` as computed below.
+
+   Compute `plugin_source` from the marker file shipped inside the plugin:
+   ```python
+   marker = plugin_root / ".plugin_source"
+   plugin_source = marker.read_text(encoding="utf-8").strip() if marker.exists() else "local-dist"
+   # possible literal values: "github-release-v<version>" (tarball install) or "local-dist" (dev install)
+   ```
+
+   Then write:
    ```toml
    specguard_version = "{{ specguard_version }}"
    agent = "claude"
    spec = "{{ layout_name }}"
    layout = "{{ layout_name }}"
    installed_at = "<ISO 8601 UTC now>"
-   plugin_source = "local-dist"
+   plugin_source = "<computed above>"
    ```
 
 7. Output a structured report:

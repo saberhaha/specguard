@@ -89,6 +89,16 @@ def test_upgrade_command_mentions_python_runtime(dist: Path):
     assert "manual_patch" in cmd
 
 
+def test_init_command_uses_marker_for_plugin_source(dist: Path):
+    cmd = (dist / "commands/init.md").read_text()
+    # plugin_source must be computed from the marker file, not hardcoded
+    assert 'marker = plugin_root / ".plugin_source"' in cmd
+    # no hardcoded "local-dist" as the direct value in the .specguard-version block
+    assert 'plugin_source = "local-dist"' not in cmd
+    # plugin_source must still be mentioned somewhere (e.g. in the toml block or comment)
+    assert "plugin_source" in cmd
+
+
 def test_upgrade_command_embeds_asset_sections(dist: Path):
     cmd = (dist / "commands/upgrade.md").read_text(encoding="utf-8")
     assert "<!-- specguard:start -->" in cmd
