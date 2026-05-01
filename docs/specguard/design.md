@@ -1,6 +1,6 @@
 # specguard 设计（Living Architecture）
 
-**Last verified against code**: 2026-05-01 @ commit `f03eaf2`
+**Last verified against code**: 2026-05-01 @ commit `d9b78f3`
 **Authoritative for**: 当前架构、命令语义、数据契约、安全边界
 **ADR 索引**: [decisions/README.md](decisions/README.md)
 
