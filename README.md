@@ -13,8 +13,8 @@ specguard is:
 Download a Claude plugin tarball from the latest GitHub Release and unpack it somewhere stable:
 
 ```bash
-mkdir -p ~/.local/share/specguard/plugins
-curl -L https://github.com/<org>/specguard/releases/latest/download/specguard-claude-specguard-default-v0.2.0.tar.gz \
+mkdir -p ~/.local/share/specguard/plugins/specguard-default
+curl -L https://github.com/saberhaha/specguard/releases/latest/download/specguard-claude-specguard-default-v0.2.0.tar.gz \
   | tar -xz -C ~/.local/share/specguard/plugins/specguard-default
 ```
 
