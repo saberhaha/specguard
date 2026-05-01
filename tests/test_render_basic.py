@@ -14,7 +14,7 @@ def test_render_creates_dist(tmp_path: Path):
     assert (out / "skills/design-governance/SKILL.md").is_file()
     assert (out / "commands/init.md").is_file()
     assert (out / "commands/check.md").is_file()
-    assert (out / "commands/upgrade.md").is_file()
+    assert not (out / "commands/upgrade.md").exists()
     assert (out / "hooks/settings.json.snippet").is_file()
 
 
@@ -54,6 +54,6 @@ def test_render_includes_runtime_modules(tmp_path: Path):
     render(repo_root=REPO, target="claude", layout="specguard-default", out_dir=out)
     assert (out / "runtime/specguard/__init__.py").is_file()
     assert (out / "runtime/specguard/hooks_merge.py").is_file()
-    assert (out / "runtime/specguard/upgrade.py").is_file()
+    assert not (out / "runtime/specguard/upgrade.py").exists()
     src_text = (REPO / "src/specguard/hooks_merge.py").read_text()
     assert (out / "runtime/specguard/hooks_merge.py").read_text() == src_text

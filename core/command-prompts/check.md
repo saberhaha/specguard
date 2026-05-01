@@ -17,11 +17,9 @@ No positional modes are supported. This command is read-only and does not create
 6. Every ADR appears in `{{ paths.decisions_dir }}/README.md` index.
 7. Every ADR-NNNN referenced in `{{ paths.design }}` exists.
 8. Every `Superseded by ADR-NNNN` target exists.
-9. Every `*.md` under `{{ paths.specs_dir }}` (excluding `TEMPLATE.md` and pre-existing files older than `.specguard-version` `installed_at` if available) contains the heading `## ADR 级别决策识别`. For `superpowers` layout, files matching `*-design.md` are legacy snapshots and exempt from this requirement (warning only).
+9. Every `*.md` under `{{ paths.specs_dir }}` (excluding `TEMPLATE.md`) contains the heading `## ADR 级别决策识别`. For `superpowers` layout, files matching `*-design.md` are legacy snapshots and exempt from this requirement (warning only).
 10. `CLAUDE.md` contains `<!-- specguard:start -->` and `<!-- specguard:end -->`.
-11. `.specguard/hooks.snippet.json` exists.
-12. `.claude/settings.json` must contain entries tagged with `statusMessage` prefix `specguard:`. If missing specguard hooks are detected, report this as an **error** (not a warning); include the exact message: "missing specguard hooks — run `/specguard:init` to auto-merge, or manually merge `.specguard/hooks.snippet.json` into `.claude/settings.json` as a fallback".
-13. `.specguard-version` exists.
+11. `.claude/settings.json` contains entries tagged with `statusMessage` prefix `specguard:`.
 
 If layout is `openspec-sidecar`, additionally:
 - For each archived OpenSpec change, if its `design.md` mentions a decision, warn if `decisions/` has no corresponding ADR.
