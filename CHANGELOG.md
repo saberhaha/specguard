@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.3.0 - 2026-05-01
+
+### BREAKING
+
+Withdrew `/specguard:upgrade` command and simplified data contracts (ADR-0007 supersedes ADR-0006).
+
+#### Removed
+- `/specguard:upgrade` command, prompt, Python runtime module (`upgrade.py`), and all upgrade tests.
+- `.specguard-version` file (no longer written by init or checked by check).
+- `.plugin_source` provenance marker (no longer stamped into release tarball).
+- `.specguard/hooks.snippet.json` intermediate file (init now uses a tempfile for hooks merge).
+- `<!-- specguard:rules:start -->` / `<!-- specguard:rules:end -->` markers in `decisions/README.md`.
+- `/specguard:check` items 11 (hooks.snippet.json), 12 (settings.json hooks error), 13 (.specguard-version). Check now has 11 structural items.
+
+#### Changed
+- `/specguard:init` hooks merge uses a tempfile instead of writing `.specguard/hooks.snippet.json`.
+- `/specguard:check` item 11 now validates `.claude/settings.json` contains `specguard:` hooks (previously item 12 with error-level severity; now a simple check).
+- Release tarball no longer contains `.plugin_source` file.
+
+#### Migration from v0.2.x
+- Delete `.specguard-version` from your project root (if present).
+- Delete `.specguard/hooks.snippet.json` (if present).
+- Delete `.plugin_source` from your plugin directory (if present).
+- Remove `<!-- specguard:rules:start -->` and `<!-- specguard:rules:end -->` markers from `decisions/README.md` (keep the content between them).
+- Re-run `/specguard:init` to update `CLAUDE.md` and hooks.
+
 ## v0.2.1 - 2026-05-01
 
 ### Changed

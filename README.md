@@ -14,7 +14,7 @@ Download a Claude plugin tarball from the latest GitHub Release and unpack it so
 
 ```bash
 mkdir -p ~/.local/share/specguard/plugins/specguard-default
-curl -L https://github.com/saberhaha/specguard/releases/latest/download/specguard-claude-specguard-default-v0.2.1.tar.gz \
+curl -L https://github.com/saberhaha/specguard/releases/latest/download/specguard-claude-specguard-default-v0.3.0.tar.gz \
   | tar -xz -C ~/.local/share/specguard/plugins/specguard-default
 ```
 
@@ -25,20 +25,13 @@ claude --plugin-dir ~/.local/share/specguard/plugins/specguard-default \
   -p '/specguard:init --ai claude --spec none'
 ```
 
-`/specguard:init` creates the living design / ADR / spec scaffold, updates `CLAUDE.md`, writes `.specguard/hooks.snippet.json`, and merges hooks into `.claude/settings.json` automatically. Use `--dry-run` to preview without writing.
+`/specguard:init` creates the living design / ADR / spec scaffold, updates `CLAUDE.md`, and merges hooks into `.claude/settings.json` automatically. Use `--dry-run` to preview without writing.
 
 Run governance check anytime:
 
 ```bash
 claude --plugin-dir ~/.local/share/specguard/plugins/specguard-default \
   -p '/specguard:check'
-```
-
-Upgrade to a new specguard version after downloading a new tarball:
-
-```bash
-claude --plugin-dir ~/.local/share/specguard/plugins/specguard-default \
-  -p '/specguard:upgrade'
 ```
 
 Available layouts:
@@ -62,7 +55,7 @@ It is not a replacement for spec-driven development tools. It is a **governance 
 | Item | State |
 |---|---|
 | MVP scaffold | shipped (v0.1.0) |
-| Auto hook merge + Release tarball | shipped (v0.2.1) |
+| Withdraw upgrade + simplify contracts | shipped (v0.3.0) |
 | Marketplace | not yet |
 | Cursor / Codex adapter | not yet |
 
