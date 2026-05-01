@@ -14,7 +14,7 @@ Download a Claude plugin tarball from the latest GitHub Release and unpack it so
 
 ```bash
 mkdir -p ~/.local/share/specguard/plugins/specguard-default
-curl -L https://github.com/saberhaha/specguard/releases/latest/download/specguard-claude-specguard-default-v0.2.0.tar.gz \
+curl -L https://github.com/saberhaha/specguard/releases/latest/download/specguard-claude-specguard-default-v0.2.1.tar.gz \
   | tar -xz -C ~/.local/share/specguard/plugins/specguard-default
 ```
 
@@ -62,7 +62,7 @@ It is not a replacement for spec-driven development tools. It is a **governance 
 | Item | State |
 |---|---|
 | MVP scaffold | shipped (v0.1.0) |
-| Auto hook merge + Release tarball | shipped (v0.2.0) |
+| Auto hook merge + Release tarball | shipped (v0.2.1) |
 | Marketplace | not yet |
 | Cursor / Codex adapter | not yet |
 
