@@ -1,6 +1,6 @@
 # specguard 设计（Living Architecture）
 
-**Last verified against code**: 9bf394e
+**Last verified against code**: （待本切片最终 commit 后更新）
 **Authoritative for**: 当前架构、命令语义、数据契约、安全边界
 **ADR 索引**: [decisions/README.md](decisions/README.md)
 
@@ -17,7 +17,7 @@ specguard 是一个项目治理脚手架：把 living design、ADR、spec discip
 - 交付治理 scaffold，不接管用户项目的业务代码生成。
 - 约束 AI 协作流程，不替代 OpenSpec、Superpowers、Spec Kit。
 - 当前唯一可执行 agent adapter 是 Claude Code；Cursor、Codex、generic adapter 是 v0.3+ 留位。
-- 当前唯一分发方式是 GitHub Release tarball；marketplace install 是 v0.3+ 留位。
+- 分发方式：Claude Code marketplace（`plugins/<layout>/` git-subdir）为主，GitHub Release tarball 作为 fallback（见 ADR-0008）。
 
 ## 2. 端到端流程
 
@@ -25,13 +25,22 @@ specguard 是一个项目治理脚手架：把 living design、ADR、spec discip
 
 ```mermaid
 flowchart TD
-  A[core assets] --> R[src/specguard/render.py]
-  L[layout manifest] --> R
-  C[claude adapter manifest] --> R
-  R --> D[dist/claude/<layout>]
-  D --> M[runtime/specguard/*.py copied]
-  M --> T[release tarball]
+  T[git tag v*] --> CI[CI checkout main]
+  CI --> A[core assets]
+  A --> RP[src/specguard/render.py render plugins/<layout>]
+  L[layout manifest] --> RP
+  C[claude adapter manifest] --> RP
+  RP --> PD[plugins/<layout>/ git tracked]
+  PD --> PR[git pull --rebase main]
+  PR --> PC[git commit plugins/]
+  PC --> PP[git push HEAD:main]
+  PP --> RD[render dist/claude/<layout> fallback]
+  RD --> M[runtime/specguard/*.py copied]
+  M --> TB[release tarball]
+  TB --> GR[GitHub Release]
 ```
+
+tag 触发 → CI checkout main → render `plugins/<layout>/` → `pull --rebase main` 防 race → commit + push main → 继续 render `dist/` 并打 tarball 作为 fallback → 发布 GH Release（见 ADR-0008）。
 
 ### 2.2 Init flow
 
@@ -76,6 +85,11 @@ flowchart TD
 
 `src/specguard/render.py` 是 build-time 渲染管线，负责把 `src/specguard/` 下的 `__init__.py` 与 `hooks_merge.py` 复制到 dist 的 `runtime/specguard/`。`src/specguard/hooks_merge.py` 是 runtime-safe Python module，由 `/specguard:init` rendered prompt 通过 `CLAUDE_PLUGIN_ROOT/runtime` 导入（见 ADR-0004）。
 
+### 3.5 marketplace 与 plugins/
+
+- `.claude-plugin/marketplace.json`：Claude Code marketplace 元数据，列出三个 plugin（specguard-default / specguard-superpowers / specguard-openspec-sidecar），每个 plugin 的 `source` 用 `git-subdir` 指向同 repo 的 `plugins/<layout>/`（见 ADR-0008）。
+- `plugins/<layout>/`：CI render 产物的 git tracked 目录，对应三种 layout。**禁止人工编辑**：每次 release tag 触发时 CI 会重新渲染并 force-overwrite 该目录、再 commit + push 回 main。手工修改会在下次 release 时丢失。
+
 ## 4. 数据契约
 
 执行强度分三类：
@@ -93,6 +107,8 @@ flowchart TD
 | 5 | `docs/specguard/design.md` | 用户契约 | 当前架构唯一真相；接口、数据结构、模块边界变更必须同步。 |
 | 6 | spec ADR 判断标题 | 治理强制 | 新 spec 必须含 `## ADR 级别决策识别`，存量文件可按 installed_at 豁免。 |
 | 7 | ADR supersede 引用 | 治理强制 | `Superseded by ADR-NNNN` 的目标 ADR 必须存在。 |
+| 8 | `.claude-plugin/marketplace.json` schema | 机器强制 | 必填 `name="specguard"`、`owner.{name,email}`、`plugins[]` 数组；每个 plugin 必填 `name`、`source.{source="git-subdir",url,path}`、`description`。plugin entry **不写** `version`，避免与 plugin.json.version 双写发散（见 ADR-0008）。 |
+| 9 | `plugins/<layout>/` 结构 | 机器强制 | 必含 `.claude-plugin/plugin.json`、`commands/init.md`、`commands/check.md`、`runtime/specguard/{__init__.py,hooks_merge.py}`、`hooks/settings.json.snippet`、`skills/design-governance/SKILL.md`。`plugin.json.version` 由 render 时从 `core/version` 注入，禁止人工编辑（见 ADR-0008）。 |
 
 ## 5. 命令语义
 
@@ -121,6 +137,7 @@ flowchart TD
 - layout/adapter 边界：layout 不实现 agent 行为；adapter 不改变 layout paths。
 - check 只读：`/specguard:check` 不创建 review package 或其他项目文件。
 - specguard 不执行用户项目代码：render、hooks merge 只读写治理文件与 JSON/TOML-like metadata。
+- marketplace plugin path 完整性：`.claude-plugin/marketplace.json` 列出的每个 plugin `source.path` 必须对应一个 git tracked 目录且含合法 `plugin.json`；`tests/test_marketplace_schema.py::test_marketplace_plugin_paths_exist_and_have_plugin_json` 强制保证（见 ADR-0008）。
 
 ## 7. 测试策略
 
@@ -132,6 +149,7 @@ flowchart TD
 | hooks merge 覆盖用户自定义 hooks | `tests/test_init_merge_hooks.py` |
 | release tarball 缺 runtime | `tests/test_render_basic.py`、`tests/test_release_workflow.py` |
 | layout path 漂移 | 三个 render layout 测试 |
+| `plugins/` 与 `src/` 脱同步导致 marketplace 用户拿到旧版本 | `release.yml` 在 build tarball 之前强制 render+commit+push `plugins/`，`pull --rebase` 防 race；`tests/test_release_workflow.py::test_release_workflow_renders_and_commits_plugins` 断言这个步骤顺序（见 ADR-0008）。 |
 
 ### 7.2 改动类型 → 必跑测试
 
@@ -141,11 +159,13 @@ flowchart TD
 | hooks merge runtime | `uv run pytest tests/test_init_merge_hooks.py -q` |
 | render/release | `uv run pytest tests/test_render_basic.py tests/test_release_workflow.py -q` |
 | release candidate | `uv run pytest` + render 三 layout |
+| `marketplace.json` schema 修改 | `uv run pytest tests/test_marketplace_schema.py -q`。影响：会让所有 `marketplace add` 用户在下次 update 时重新 resolve plugin source；schema 不向前兼容会导致 plugin install 失败（见 ADR-0008）。 |
 
 ### 7.3 必须人工 dogfood
 
 - 新 release tarball：从 GitHub Release 下载后，在临时 git repo 运行 `/specguard:init`。
 - hooks 行为：确认 `.claude/settings.json` 保留非 specguard hooks。
+- v0.4.0 dogfood 记录（待 v0.4.0 release 后回填）：从 marketplace 安装三个 plugin（`specguard-default` / `specguard-superpowers` / `specguard-openspec-sidecar`）各跑一次 `/specguard:init` + `/specguard:check`。
 - v0.3.0 dogfood 记录（2026-05-01，commit 9bf394e，release v0.3.0）：在 `/tmp/sg-dog-v030/<layout>/repo` 三个临时 git repo 各跑一次 `/specguard:init --ai claude --spec none` 与 `/specguard:check`。三 layout（specguard-default / superpowers / openspec-sidecar）init 全部成功创建治理文件并自动合并 hooks；check 输出 11 项结构检查，0 errors / 0 warnings。Tarball 验证：commands 仅含 `init.md` + `check.md`，runtime 仅含 `__init__.py` + `hooks_merge.py`，无 `.plugin_source`、`.specguard-version`、`.specguard/hooks.snippet.json`、decisions/README rules marker。
 
 ### 7.4 未覆盖风险
@@ -155,10 +175,9 @@ flowchart TD
 
 ## 8. 不在范围
 
-### 8.1 v0.3+ 留位
+### 8.1 v0.4+ 留位
 
 - Cursor / Codex / generic adapter。
-- Marketplace 分发。
 - skill pressure tests。
 - PR bot / GitHub Action 治理报告。
 - 中央 dashboard。

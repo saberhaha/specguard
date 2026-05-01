@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.4.0 - 2026-05-01
+
+### Added
+
+- `.claude-plugin/marketplace.json`: declares specguard marketplace with three plugin entries (`specguard-default`, `specguard-superpowers`, `specguard-openspec-sidecar`) using `git-subdir` source pointing to same-repo `plugins/<layout>/`. Users can now install via `claude plugin marketplace add saberhaha/specguard` + `claude plugin install <name>@specguard`.
+- `plugins/specguard-default/`, `plugins/superpowers/`, `plugins/openspec-sidecar/`: rendered plugin trees committed to git (required because Claude Code marketplace does not support GitHub Release tarball as plugin source).
+- Release workflow auto-renders `plugins/<layout>/`, pull-rebases main, commits with `--allow-empty`, and pushes `HEAD:main` before building tarballs. Marketplace stays synchronized with source on every tag (ADR-0008).
+
+### Changed
+
+- README quickstart now leads with marketplace install; tarball download moved to "Alternative" section for offline / restricted-network use.
+- Status table records v0.4.0 marketplace shipping.
+
+### Notes
+
+- GitHub Release tarball distribution is preserved as fallback.
+- Local development still uses `--plugin-dir dist/claude/<layout>` after `uv run specguard-render`.
+
 ## v0.3.0 - 2026-05-01
 
 ### BREAKING

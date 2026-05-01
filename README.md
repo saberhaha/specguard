@@ -10,19 +10,23 @@ specguard is:
 
 ## Quickstart (users)
 
-Download a Claude plugin tarball from the latest GitHub Release and unpack it somewhere stable:
+Add the specguard marketplace and install a layout:
 
 ```bash
-mkdir -p ~/.local/share/specguard/plugins/specguard-default
-curl -L https://github.com/saberhaha/specguard/releases/latest/download/specguard-claude-specguard-default-v0.3.0.tar.gz \
-  | tar -xz -C ~/.local/share/specguard/plugins/specguard-default
+claude plugin marketplace add saberhaha/specguard
+claude plugin install specguard-default@specguard
 ```
+
+Available plugins (one per layout):
+
+- `specguard-default` — design/ADR/spec under `docs/specguard/`
+- `specguard-superpowers` — design/ADR/spec under `docs/superpowers/`
+- `specguard-openspec-sidecar` — design/ADR under `docs/specguard/`, specs under `openspec/`
 
 Run init from inside the target project (a real git repo):
 
 ```bash
-claude --plugin-dir ~/.local/share/specguard/plugins/specguard-default \
-  -p '/specguard:init --ai claude --spec none'
+claude -p '/specguard:init --ai claude --spec none'
 ```
 
 `/specguard:init` creates the living design / ADR / spec scaffold, updates `CLAUDE.md`, and merges hooks into `.claude/settings.json` automatically. Use `--dry-run` to preview without writing.
@@ -30,14 +34,20 @@ claude --plugin-dir ~/.local/share/specguard/plugins/specguard-default \
 Run governance check anytime:
 
 ```bash
-claude --plugin-dir ~/.local/share/specguard/plugins/specguard-default \
-  -p '/specguard:check'
+claude -p '/specguard:check'
 ```
 
-Available layouts:
-- `specguard-default` — design/ADR/spec under `docs/specguard/`
-- `superpowers` — design/ADR/spec under `docs/superpowers/`
-- `openspec-sidecar` — design/ADR under `docs/specguard/`, specs under `openspec/`
+### Alternative: download release tarball
+
+For offline / restricted-network / private GitHub Enterprise users where marketplace install is not available:
+
+```bash
+mkdir -p ~/.local/share/specguard/plugins/specguard-default
+curl -L https://github.com/saberhaha/specguard/releases/latest/download/specguard-claude-specguard-default-v0.4.0.tar.gz \
+  | tar -xz -C ~/.local/share/specguard/plugins/specguard-default
+claude --plugin-dir ~/.local/share/specguard/plugins/specguard-default \
+  -p '/specguard:init --ai claude --spec none'
+```
 
 ## Why
 
@@ -56,7 +66,7 @@ It is not a replacement for spec-driven development tools. It is a **governance 
 |---|---|
 | MVP scaffold | shipped (v0.1.0) |
 | Withdraw upgrade + simplify contracts | shipped (v0.3.0) |
-| Marketplace | not yet |
+| Marketplace install (`/plugin install ...@specguard`) | shipped (v0.4.0) |
 | Cursor / Codex adapter | not yet |
 
 ## Development
