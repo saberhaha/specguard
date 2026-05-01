@@ -162,3 +162,46 @@ def test_upgrade_no_op_when_already_current(tmp_path: Path):
     assert result2.changed is False
 
     assert {p: os.stat(p).st_mtime_ns for p in mtime_before} == mtime_before
+
+
+def test_upgrade_dry_run_returns_diff_summary_without_writing(tmp_path: Path):
+    setup_project(tmp_path)
+    before = {
+        p: p.read_text(encoding="utf-8")
+        for p in [
+            tmp_path / "CLAUDE.md",
+            tmp_path / ".claude/settings.json",
+            tmp_path / "docs/specguard/specs/TEMPLATE.md",
+            tmp_path / "docs/specguard/decisions/TEMPLATE.md",
+            tmp_path / "docs/specguard/decisions/README.md",
+            tmp_path / ".specguard-version",
+        ]
+    }
+
+    result = upgrade_project(tmp_path, replacements(), dry_run=True)
+
+    assert result.changed is True
+    assert "SpecGuard upgrade 0.1.0 → 0.2.0" in result.diff_summary
+    assert "Will update:" in result.diff_summary
+    assert "CLAUDE.md specguard block" in result.diff_summary
+    assert ".claude/settings.json specguard hooks" in result.diff_summary
+    assert "docs/specguard/specs/TEMPLATE.md" in result.diff_summary
+    assert "docs/specguard/decisions/TEMPLATE.md" in result.diff_summary
+    assert "docs/specguard/decisions/README.md rules" in result.diff_summary
+    assert ".specguard-version" in result.diff_summary
+    assert "Will not touch:" in result.diff_summary
+    assert "docs/specguard/design.md content" in result.diff_summary
+    assert "existing ADR files" in result.diff_summary
+    assert "existing spec files" in result.diff_summary
+    assert {p: p.read_text(encoding="utf-8") for p in before} == before
+
+
+def test_upgrade_dry_run_no_op_summary_when_already_current(tmp_path: Path):
+    setup_project(tmp_path)
+    upgrade_project(tmp_path, replacements())
+
+    result = upgrade_project(tmp_path, replacements(), dry_run=True)
+
+    assert result.changed is False
+    assert "SpecGuard upgrade 0.2.0 → 0.2.0" in result.diff_summary
+    assert "No changes required." in result.diff_summary

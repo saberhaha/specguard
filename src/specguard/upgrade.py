@@ -20,9 +20,10 @@ class UpgradeConflict(ValueError):
 @dataclass(frozen=True)
 class UpgradeResult:
     changed: bool
+    diff_summary: str
 
 
-def upgrade_project(root: Path, replacements: dict[str, Any]) -> UpgradeResult:
+def upgrade_project(root: Path, replacements: dict[str, Any], dry_run: bool = False) -> UpgradeResult:
     """Two-phase upgrade: read+validate everything, then write everything.
 
     Phase 1: Read all inputs, validate markers, build updated content in memory.
@@ -123,6 +124,29 @@ def upgrade_project(root: Path, replacements: dict[str, Any]) -> UpgradeResult:
         or version_new != version_original
     )
 
+    changed_regions: list[str] = []
+    if claude_new != claude_original:
+        changed_regions.append("CLAUDE.md specguard block")
+    if settings_new != settings_current:
+        changed_regions.append(".claude/settings.json specguard hooks")
+    if specs_template_new != specs_current:
+        changed_regions.append("docs/specguard/specs/TEMPLATE.md")
+    if decisions_template_new != decisions_template_current:
+        changed_regions.append("docs/specguard/decisions/TEMPLATE.md")
+    if decisions_readme_new != decisions_readme_original:
+        changed_regions.append("docs/specguard/decisions/README.md rules")
+    if version_new != version_original:
+        changed_regions.append(".specguard-version")
+
+    diff_summary = _build_diff_summary(
+        _read_installed_version(version_original),
+        replacements["version"],
+        changed_regions,
+    )
+
+    if dry_run:
+        return UpgradeResult(changed=changed, diff_summary=diff_summary)
+
     if claude_new != claude_original:
         claude_path.write_text(claude_new, encoding="utf-8")
 
@@ -144,7 +168,7 @@ def upgrade_project(root: Path, replacements: dict[str, Any]) -> UpgradeResult:
     if version_new != version_original:
         version_path.write_text(version_new, encoding="utf-8")
 
-    return UpgradeResult(changed=changed)
+    return UpgradeResult(changed=changed, diff_summary=diff_summary)
 
 
 def _replace_between_markers(text: str, start_marker: str, end_marker: str, new_content: str, source: str) -> str:
@@ -221,3 +245,30 @@ def _update_version_file(text: str, version: str, plugin_source: str) -> str:
         result.append(f'plugin_source = "{plugin_source}"\n')
 
     return "".join(result)
+
+
+def _read_installed_version(text: str) -> str:
+    for line in text.splitlines():
+        match = re.match(r'^specguard_version\s*=\s*["\']([^"\']+)["\']', line)
+        if match:
+            return match.group(1)
+    return "unknown"
+
+
+def _build_diff_summary(old_version: str, new_version: str, changed_regions: list[str]) -> str:
+    lines = [f"SpecGuard upgrade {old_version} → {new_version}", ""]
+    if changed_regions:
+        lines.append("Will update:")
+        lines.extend(f"✓ {region}" for region in changed_regions)
+    else:
+        lines.append("No changes required.")
+    lines.extend(
+        [
+            "",
+            "Will not touch:",
+            "- docs/specguard/design.md content",
+            "- existing ADR files",
+            "- existing spec files",
+        ]
+    )
+    return "\n".join(lines) + "\n"
