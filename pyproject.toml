@@ -1,6 +1,6 @@
 [project]
 name = "specguard"
-version = "0.3.0"
+version = "0.4.0"
 description = "Project governance scaffold for AI-driven development"
 requires-python = ">=3.11"
 dependencies = [

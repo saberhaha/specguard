@@ -20,9 +20,9 @@ def test_release_workflow_builds_three_layout_tarballs():
     assert "uv sync --frozen" in text
 
 
-def test_core_version_is_v0_3_0():
+def test_core_version_is_v0_4_0():
     version = (REPO / "core/version").read_text().strip()
-    assert version == "0.3.0"
+    assert version == "0.4.0"
 
 
 def test_release_workflow_has_tag_version_guard():
