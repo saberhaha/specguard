@@ -1,0 +1,37 @@
+{
+  "name": "specguard",
+  "owner": {
+    "name": "saber",
+    "email": "lixiukuan@users.noreply.github.com"
+  },
+  "description": "Project governance scaffold for AI-driven development",
+  "plugins": [
+    {
+      "name": "specguard-default",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/saberhaha/specguard.git",
+        "path": "plugins/specguard-default"
+      },
+      "description": "specguard with design/ADR/spec under docs/specguard/"
+    },
+    {
+      "name": "specguard-superpowers",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/saberhaha/specguard.git",
+        "path": "plugins/superpowers"
+      },
+      "description": "specguard with design/ADR/spec under docs/superpowers/"
+    },
+    {
+      "name": "specguard-openspec-sidecar",
+      "source": {
+        "source": "git-subdir",
+        "url": "https://github.com/saberhaha/specguard.git",
+        "path": "plugins/openspec-sidecar"
+      },
+      "description": "specguard with design/ADR under docs/specguard/, specs under openspec/"
+    }
+  ]
+}
