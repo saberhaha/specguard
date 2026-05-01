@@ -15,8 +15,15 @@
 
 ### Notes
 
-- GitHub Release tarball distribution is preserved as fallback.
+- GitHub Release tarball distribution is preserved as fallback **and remains the recommended quickstart in v0.4.0** because of the limitations below.
 - Local development still uses `--plugin-dir dist/claude/<layout>` after `uv run specguard-render`.
+
+### Known limitations (Claude Code v2.1.123, verified 2026-05-01)
+
+1. Marketplace-installed plugins are not exposed via `CLAUDE_PLUGIN_ROOT`. `/specguard:init` therefore stops before merging hooks; use the tarball quickstart for full auto-merge.
+2. `claude plugin install` for multiple plugins under the same marketplace can briefly fail with `ENOTEMPTY: directory not empty` on the cache directory; a retry typically succeeds.
+
+Both limitations are upstream Claude Code issues and not specguard bugs.
 
 ## v0.3.0 - 2026-05-01
 
