@@ -1,6 +1,6 @@
 # specguard 设计（Living Architecture）
 
-**Last verified against code**: （待本切片最终 commit 后更新）
+**Last verified against code**: 9bf394e
 **Authoritative for**: 当前架构、命令语义、数据契约、安全边界
 **ADR 索引**: [decisions/README.md](decisions/README.md)
 
@@ -146,7 +146,7 @@ flowchart TD
 
 - 新 release tarball：从 GitHub Release 下载后，在临时 git repo 运行 `/specguard:init`。
 - hooks 行为：确认 `.claude/settings.json` 保留非 specguard hooks。
-- v0.3.0 dogfood 记录：（待 release 后回填）
+- v0.3.0 dogfood 记录（2026-05-01，commit 9bf394e，release v0.3.0）：在 `/tmp/sg-dog-v030/<layout>/repo` 三个临时 git repo 各跑一次 `/specguard:init --ai claude --spec none` 与 `/specguard:check`。三 layout（specguard-default / superpowers / openspec-sidecar）init 全部成功创建治理文件并自动合并 hooks；check 输出 11 项结构检查，0 errors / 0 warnings。Tarball 验证：commands 仅含 `init.md` + `check.md`，runtime 仅含 `__init__.py` + `hooks_merge.py`，无 `.plugin_source`、`.specguard-version`、`.specguard/hooks.snippet.json`、decisions/README rules marker。
 
 ### 7.4 未覆盖风险
 
