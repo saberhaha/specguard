@@ -6,40 +6,13 @@ This command prompt is rendered for a specific layout. All embedded asset sectio
 
 ## Steps
 
-1. Read `.specguard-version`. If missing, ask user whether to treat project as legacy and run init-then-upgrade.
+1. Resolve the plugin runtime directory from the environment variable `CLAUDE_PLUGIN_ROOT`. If the variable is not set, stop and tell the user: "CLAUDE_PLUGIN_ROOT is not set — your Claude Code version or plugin runtime does not expose the plugin root. Cannot locate specguard runtime."
 
-2. Compare `specguard_version` to plugin's `core/version`. If equal, output "already up to date" and exit.
+2. Read `.specguard-version`. If `.specguard-version` is missing, stop and tell the user: "This project is not initialized for specguard — run `/specguard:init` first." Do not run init-then-upgrade.
 
-3. Build upgrade plan by inspecting marker regions:
-   - `CLAUDE.md` block between `<!-- specguard:start -->` and `<!-- specguard:end -->`
-   - `.claude/settings.json` hooks identifiable by `statusMessage` prefix `specguard:`
-   - `{{ paths.specs_dir }}/TEMPLATE.md`
-   - `{{ paths.decisions_dir }}/TEMPLATE.md`
-   - `{{ paths.decisions_dir }}/README.md` rule sections
+3. Read the plugin version from `plugin_root / "version"`. Compare it to `.specguard-version` field `specguard_version`. If equal, output "already up to date" and exit without writing files.
 
-4. Print diff summary per region. Files outside markers are never touched. Summary format:
-
-```
-SpecGuard upgrade <old> → <new>
-
-Will update:
-✓ CLAUDE.md specguard block (3 lines changed)
-✓ specs/TEMPLATE.md (added new required field)
-✓ UserPromptSubmit hook command updated
-
-Will not touch:
-- design.md content
-- existing ADR files
-- existing spec files
-```
-
-5. Ask user to confirm.
-
-6. On confirm, call `specguard.upgrade` from the rendered plugin `runtime/` directory.
-
-   First, resolve the plugin runtime directory from the environment variable `CLAUDE_PLUGIN_ROOT`. If the variable is not set, stop and tell the user: "CLAUDE_PLUGIN_ROOT is not set — your Claude Code version or plugin runtime does not expose the plugin root. Cannot locate specguard runtime."
-
-   Construct `replacements` by reading from the embedded asset sections of THIS command file:
+4. Construct `replacements` by reading from the embedded asset sections of THIS command file:
 
    ```python
    # replacements must be built before calling upgrade_project
@@ -54,7 +27,7 @@ Will not touch:
    }
    ```
 
-   Then invoke:
+5. Import the runtime module from the rendered plugin `runtime/` directory:
 
    ```python
    import os
@@ -63,21 +36,35 @@ Will not touch:
    plugin_root = Path(os.environ["CLAUDE_PLUGIN_ROOT"])
    sys.path.insert(0, str(plugin_root / "runtime"))
    from specguard.upgrade import upgrade_project, UpgradeConflict
-
-   try:
-       result = upgrade_project(Path("."), replacements)
-       print("Upgraded:", result.changed)
-   except UpgradeConflict as exc:
-       print(exc.manual_patch)  # output manual_patch to the user for manual resolution
    ```
 
-   If `.specguard-version` is missing `plugin_source`, treat it as `local-dist`.
-   If `UpgradeConflict` is raised for any marker region, output `exc.manual_patch` and ask the user to apply the patch manually before retrying.
-   Files outside markers are never touched.
+6. Run a dry-run first and print the diff summary. Files outside markers are never touched. If `UpgradeConflict` is raised for any marker region, output `exc.manual_patch` and ask the user to apply the patch manually before retrying.
 
-7. Confirm `.specguard-version` was updated by `upgrade_project` (the function writes it as part of Phase 2; no separate write step is needed here).
+   ```python
+   try:
+       preview = upgrade_project(Path("."), replacements, dry_run=True)
+       print(preview.diff_summary)
+   except UpgradeConflict as exc:
+       print(exc.manual_patch)
+       raise
+   ```
 
-8. Print final report.
+7. Ask user to confirm before writing. Do not write files unless the user explicitly confirms the diff summary.
+
+8. After confirmation, run the write path:
+
+   ```python
+   try:
+       result = upgrade_project(Path("."), replacements, dry_run=False)
+       print("Upgraded:", result.changed)
+   except UpgradeConflict as exc:
+       print(exc.manual_patch)
+       raise
+   ```
+
+9. Confirm `.specguard-version` was updated by `upgrade_project` when changes were needed; the function writes it as part of Phase 2, no separate write step is needed here.
+
+10. Print final report.
 
 ---
 
