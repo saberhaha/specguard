@@ -1,6 +1,6 @@
 # ADR 0006: 收紧 `/specguard:upgrade` 写入前交互与缺版本行为
 
-**状态**：Accepted
+**状态**：Superseded by ADR-0007
 **日期**：2026-05-01
 **拍板者**：用户（@saber，对话日期 2026-05-01，确认 upgrade 必须先展示 diff summary 并等待确认）
 **取代**：—

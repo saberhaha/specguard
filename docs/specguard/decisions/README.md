@@ -11,7 +11,8 @@
 | [0003](0003-distribution-via-github-release.md) | 通过 GitHub Release tarball 分发 Claude plugin | Accepted | design §2、§3.1、§3.3、§6 |
 | [0004](0004-python-modules-for-runtime-algorithms.md) | 将 init hooks 合并与 upgrade marker 替换下沉为 Python 模块 | Accepted | design §3.1、§3.3、§5 |
 | [0005](0005-delete-check-semantic-review-package.md) | 删除 `/specguard:check semantic` review package 模式 | Accepted | design §5.3、§8 |
-| [0006](0006-tighten-upgrade-interaction-and-version-handling.md) | 收紧 `/specguard:upgrade` 写入前交互与缺版本行为 | Accepted | design §5.4、§6 |
+| [0006](0006-tighten-upgrade-interaction-and-version-handling.md) | 收紧 `/specguard:upgrade` 写入前交互与缺版本行为 | Superseded by ADR-0007 | design §5.4、§6 |
+| [0007](0007-withdraw-upgrade-and-simplify-contracts.md) | 撤回 `/specguard:upgrade` 并精简伪契约 | Accepted | design §5.4、§6、§8 |
 
 后续若出现以下情况新增 ADR：
 
