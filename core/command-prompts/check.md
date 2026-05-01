@@ -5,7 +5,7 @@ Validate the governance state of the current project.
 ## Arguments
 
 User-provided: $ARGUMENTS
-Optional positional: `semantic` (generates AI review package; does not call any LLM)
+No positional modes are supported. This command is read-only and does not create review packages or other project files.
 
 ## Structural checks
 
@@ -20,7 +20,7 @@ Optional positional: `semantic` (generates AI review package; does not call any 
 9. Every `*.md` under `{{ paths.specs_dir }}` (excluding `TEMPLATE.md` and pre-existing files older than `.specguard-version` `installed_at` if available) contains the heading `## ADR 级别决策识别`. For `superpowers` layout, files matching `*-design.md` are legacy snapshots and exempt from this requirement (warning only).
 10. `CLAUDE.md` contains `<!-- specguard:start -->` and `<!-- specguard:end -->`.
 11. `.specguard/hooks.snippet.json` exists.
-12. `.claude/settings.json` must contain entries tagged with `statusMessage` prefix `specguard:`. If missing specguard hooks are detected, report this as an **error** (not a warning); include the exact message: "missing specguard hooks — run `/specguard:init` to auto-merge, or manually merge `.specguard/hooks.snippet.json` into `.claude/settings.json`".
+12. `.claude/settings.json` must contain entries tagged with `statusMessage` prefix `specguard:`. If missing specguard hooks are detected, report this as an **error** (not a warning); include the exact message: "missing specguard hooks — run `/specguard:init` to auto-merge, or manually merge `.specguard/hooks.snippet.json` into `.claude/settings.json` as a fallback".
 13. `.specguard-version` exists.
 
 If layout is `openspec-sidecar`, additionally:
@@ -39,12 +39,3 @@ SpecGuard Check (agent=<x>, spec=<x>, layout=<x>)
 
 Summary: 1 error, 1 warning
 ```
-
-## Semantic mode
-
-If argument `semantic` is provided, additionally:
-1. Create `.specguard/reviews/<UTC YYYYMMDD-HHMM>/`
-2. Write `prompt.md`: instructions for an LLM to review ADR Context plausibility, missed ADR judgement, design.md drift.
-3. Write `context.md`: assembled excerpts from design.md, decisions index, latest spec, latest plan.
-4. Write `findings-template.md`: structured output format for the LLM.
-5. Do NOT call any LLM. Tell the user to feed `prompt.md + context.md` to Claude Code / Cursor / any LLM.

@@ -162,7 +162,7 @@ If `--spec none`, drop the entire "Working with the surrounding spec tool" subse
 
 ## Embedded asset: hooks settings.json snippet
 
-This is the verbatim JSON to write to `.specguard/hooks.snippet.json` and then manually merge into `.claude/settings.json`:
+This is the verbatim JSON to write to `.specguard/hooks.snippet.json`; it is then auto-merged into `.claude/settings.json` via `specguard.hooks_merge`.
 
 ```json
 <!-- inject:hooks-snippet -->
