@@ -108,3 +108,39 @@ def test_upgrade_command_embeds_asset_sections(dist: Path):
     assert "specguard: inject five laws" in cmd  # from hooks snippet
     # No marker placeholders should remain (rendered)
     assert "<!-- inject:" not in cmd
+
+
+def test_check_command_removes_semantic_review_package(dist: Path):
+    cmd = (dist / "commands/check.md").read_text(encoding="utf-8")
+    assert "Optional positional: `semantic`" not in cmd
+    assert "## Semantic mode" not in cmd
+    assert ".specguard/reviews" not in cmd
+    assert "findings-template" not in cmd
+    assert "Do NOT call any LLM" not in cmd
+
+
+def test_check_command_prefers_init_for_missing_hooks(dist: Path):
+    cmd = (dist / "commands/check.md").read_text(encoding="utf-8")
+    assert "missing specguard hooks" in cmd
+    assert "run `/specguard:init` to auto-merge" in cmd
+    assert "manually merge `.specguard/hooks.snippet.json`" in cmd
+    assert cmd.index("run `/specguard:init` to auto-merge") < cmd.index("manually merge `.specguard/hooks.snippet.json`")
+
+
+def test_init_command_hooks_section_describes_auto_merge(dist: Path):
+    cmd = (dist / "commands/init.md").read_text(encoding="utf-8")
+    assert "auto-merged into `.claude/settings.json` via `specguard.hooks_merge`" in cmd
+    assert "then manually merge into `.claude/settings.json`" not in cmd
+
+
+def test_upgrade_command_requires_version_and_confirmed_diff(dist: Path):
+    cmd = (dist / "commands/upgrade.md").read_text(encoding="utf-8")
+    assert "If `.specguard-version` is missing, stop" in cmd
+    assert "run `/specguard:init` first" in cmd
+    assert "Do not run init-then-upgrade" in cmd
+    assert 'plugin_root / "version"' in cmd
+    assert "already up to date" in cmd
+    assert "dry_run=True" in cmd
+    assert "diff_summary" in cmd
+    assert "Ask user to confirm" in cmd
+    assert "dry_run=False" in cmd
