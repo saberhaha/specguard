@@ -87,3 +87,14 @@ def test_upgrade_command_mentions_python_runtime(dist: Path):
     assert "version" in cmd
     assert "plugin_source" in cmd
     assert "manual_patch" in cmd
+
+
+def test_upgrade_command_embeds_asset_sections(dist: Path):
+    cmd = (dist / "commands/upgrade.md").read_text(encoding="utf-8")
+    assert "<!-- specguard:start -->" in cmd
+    assert "<!-- specguard:end -->" in cmd
+    assert "<!-- specguard:rules:start -->" in cmd
+    assert "<!-- specguard:rules:end -->" in cmd
+    assert "specguard: inject five laws" in cmd  # from hooks snippet
+    # No marker placeholders should remain (rendered)
+    assert "<!-- inject:" not in cmd

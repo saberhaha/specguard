@@ -113,3 +113,52 @@ def test_upgrade_no_write_on_decisions_readme_conflict(tmp_path: Path):
     assert "README.md" in patch
     assert "specguard:rules:start" in patch
     assert replacements()["decisions_readme_rules"] in patch
+
+
+def test_upgrade_raises_conflict_when_claude_md_missing(tmp_path: Path):
+    """CLAUDE.md 不存在时，upgrade_project 应 raise UpgradeConflict 而非 FileNotFoundError。"""
+    setup_project(tmp_path)
+    (tmp_path / "CLAUDE.md").unlink()
+
+    with pytest.raises(UpgradeConflict) as exc:
+        upgrade_project(tmp_path, replacements())
+
+    assert "CLAUDE.md" in exc.value.manual_patch
+
+
+def test_upgrade_raises_conflict_when_decisions_readme_missing(tmp_path: Path):
+    """decisions/README.md 不存在时，upgrade_project 应 raise UpgradeConflict 而非 FileNotFoundError。"""
+    setup_project(tmp_path)
+    (tmp_path / "docs/specguard/decisions/README.md").unlink()
+
+    with pytest.raises(UpgradeConflict) as exc:
+        upgrade_project(tmp_path, replacements())
+
+    assert "README.md" in exc.value.manual_patch
+
+
+def test_upgrade_no_op_when_already_current(tmp_path: Path):
+    """内容一致时 upgrade_project 返回 changed=False 且不写文件。"""
+    # 先完整跑一次，让文件内容收敛到与 replacements 一致
+    setup_project(tmp_path)
+    result1 = upgrade_project(tmp_path, replacements())
+    assert result1.changed is True
+
+    # 再跑一次：所有内容已与 replacements 一致
+    import os
+    mtime_before = {
+        p: os.stat(p).st_mtime_ns
+        for p in [
+            tmp_path / "CLAUDE.md",
+            tmp_path / ".claude/settings.json",
+            tmp_path / "docs/specguard/specs/TEMPLATE.md",
+            tmp_path / "docs/specguard/decisions/TEMPLATE.md",
+            tmp_path / "docs/specguard/decisions/README.md",
+            tmp_path / ".specguard-version",
+        ]
+    }
+
+    result2 = upgrade_project(tmp_path, replacements())
+    assert result2.changed is False
+
+    assert {p: os.stat(p).st_mtime_ns for p in mtime_before} == mtime_before

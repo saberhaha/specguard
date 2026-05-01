@@ -2,6 +2,7 @@
 
 本目录沉淀 {{ project.name | default("项目") }} 的架构决策。
 
+<!-- specguard:rules:start -->
 ## ADR 五类硬条件
 
 只写以下五类决策：
@@ -22,6 +23,7 @@
 ## 状态字段
 
 - `Accepted` / `Superseded by ADR-NNNN` / `Deprecated`
+<!-- specguard:rules:end -->
 
 ## ADR 索引
 

@@ -33,7 +33,19 @@ def upgrade_project(root: Path, replacements: dict[str, Any]) -> UpgradeResult:
 
     # 1. CLAUDE.md: replace between <!-- specguard:start --> and <!-- specguard:end -->
     claude_path = root / "CLAUDE.md"
-    claude_original = claude_path.read_text()
+    if not claude_path.exists():
+        patch = (
+            f"# Manual patch for {claude_path}\n"
+            f"CLAUDE.md is missing. Create it with the following content:\n"
+            f"<!-- specguard:start -->\n"
+            f"{replacements['claude_block']}"
+            f"<!-- specguard:end -->\n"
+        )
+        raise UpgradeConflict(
+            f"required file missing: {claude_path}",
+            manual_patch=patch,
+        )
+    claude_original = claude_path.read_text(encoding="utf-8")
     claude_new = _replace_between_markers(
         claude_original,
         "<!-- specguard:start -->",
@@ -46,7 +58,7 @@ def upgrade_project(root: Path, replacements: dict[str, Any]) -> UpgradeResult:
     settings_path = root / ".claude" / "settings.json"
     if settings_path.exists():
         try:
-            settings = json.loads(settings_path.read_text())
+            settings = json.loads(settings_path.read_text(encoding="utf-8"))
         except json.JSONDecodeError as exc:
             raise ValueError(f"invalid JSON in {settings_path}: {exc}") from exc
     else:
@@ -66,7 +78,19 @@ def upgrade_project(root: Path, replacements: dict[str, Any]) -> UpgradeResult:
 
     # 5. docs/specguard/decisions/README.md: replace between marker lines
     decisions_readme_path = root / "docs" / "specguard" / "decisions" / "README.md"
-    decisions_readme_original = decisions_readme_path.read_text()
+    if not decisions_readme_path.exists():
+        patch = (
+            f"# Manual patch for {decisions_readme_path}\n"
+            f"decisions/README.md is missing. Create it with the following content:\n"
+            f"<!-- specguard:rules:start -->\n"
+            f"{replacements['decisions_readme_rules']}"
+            f"<!-- specguard:rules:end -->\n"
+        )
+        raise UpgradeConflict(
+            f"required file missing: {decisions_readme_path}",
+            manual_patch=patch,
+        )
+    decisions_readme_original = decisions_readme_path.read_text(encoding="utf-8")
     decisions_readme_new = _replace_between_markers(
         decisions_readme_original,
         "<!-- specguard:rules:start -->",
@@ -77,39 +101,48 @@ def upgrade_project(root: Path, replacements: dict[str, Any]) -> UpgradeResult:
 
     # 6. .specguard-version: update/add specguard_version and plugin_source
     version_path = root / ".specguard-version"
-    version_original = version_path.read_text() if version_path.exists() else ""
+    version_original = version_path.read_text(encoding="utf-8") if version_path.exists() else ""
     version_new = _update_version_file(
         version_original,
         replacements["version"],
         replacements["plugin_source"],
     )
 
-    # ---------- Phase 2: write all files ----------
+    # ---------- Phase 2: write only changed files ----------
 
-    # Determine if anything changed
+    settings_current = settings_path.read_text(encoding="utf-8") if settings_path.exists() else ""
+    specs_current = specs_template_path.read_text(encoding="utf-8") if specs_template_path.exists() else ""
+    decisions_template_current = decisions_template_path.read_text(encoding="utf-8") if decisions_template_path.exists() else ""
+
     changed = (
         claude_new != claude_original
-        or settings_new != (settings_path.read_text() if settings_path.exists() else "")
-        or specs_template_new != (specs_template_path.read_text() if specs_template_path.exists() else "")
-        or decisions_template_new != (decisions_template_path.read_text() if decisions_template_path.exists() else "")
+        or settings_new != settings_current
+        or specs_template_new != specs_current
+        or decisions_template_new != decisions_template_current
         or decisions_readme_new != decisions_readme_original
         or version_new != version_original
     )
 
-    claude_path.write_text(claude_new)
+    if claude_new != claude_original:
+        claude_path.write_text(claude_new, encoding="utf-8")
 
-    settings_path.parent.mkdir(parents=True, exist_ok=True)
-    settings_path.write_text(settings_new)
+    if settings_new != settings_current:
+        settings_path.parent.mkdir(parents=True, exist_ok=True)
+        settings_path.write_text(settings_new, encoding="utf-8")
 
-    specs_template_path.parent.mkdir(parents=True, exist_ok=True)
-    specs_template_path.write_text(specs_template_new)
+    if specs_template_new != specs_current:
+        specs_template_path.parent.mkdir(parents=True, exist_ok=True)
+        specs_template_path.write_text(specs_template_new, encoding="utf-8")
 
-    decisions_template_path.parent.mkdir(parents=True, exist_ok=True)
-    decisions_template_path.write_text(decisions_template_new)
+    if decisions_template_new != decisions_template_current:
+        decisions_template_path.parent.mkdir(parents=True, exist_ok=True)
+        decisions_template_path.write_text(decisions_template_new, encoding="utf-8")
 
-    decisions_readme_path.write_text(decisions_readme_new)
+    if decisions_readme_new != decisions_readme_original:
+        decisions_readme_path.write_text(decisions_readme_new, encoding="utf-8")
 
-    version_path.write_text(version_new)
+    if version_new != version_original:
+        version_path.write_text(version_new, encoding="utf-8")
 
     return UpgradeResult(changed=changed)
 

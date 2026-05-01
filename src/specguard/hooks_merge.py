@@ -81,7 +81,7 @@ def _is_specguard_entry(entry: Any) -> bool:
 
 def _read_json(path: Path, label: str) -> dict[str, Any]:
     try:
-        return json.loads(path.read_text())
+        return json.loads(path.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise HookMergeError(f"invalid {label} JSON: {path}: {exc}") from exc
 
