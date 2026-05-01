@@ -42,22 +42,8 @@ If the resolved layout is not the one this command was rendered for (paths in th
 
 5. Hooks merge for `.claude/settings.json`:
    - Use the embedded JSON below verbatim as the snippet source.
-   - Unless `--dry-run`, write it verbatim to `.specguard/hooks.snippet.json`. Create the `.specguard/` directory if needed.
    - Resolve the plugin runtime directory from the environment variable `CLAUDE_PLUGIN_ROOT`. If the variable is not set, stop and tell the user: "CLAUDE_PLUGIN_ROOT is not set — your Claude Code version or plugin runtime does not expose the plugin root. Cannot locate specguard runtime."
-   - Merge the hooks by invoking the runtime module from the resolved plugin root. Use the following Python snippet (or equivalent short script):
-
-     ```python
-     import os
-     import sys
-     from pathlib import Path
-     plugin_root = Path(os.environ["CLAUDE_PLUGIN_ROOT"])
-     sys.path.insert(0, str(plugin_root / "runtime"))
-     from specguard.hooks_merge import merge_hooks_file
-     result = merge_hooks_file(Path(".claude/settings.json"), Path(".specguard/hooks.snippet.json"), dry_run=False)
-     print(result.diff)
-     ```
-
-   - If `--dry-run`, do **not** write `.specguard/hooks.snippet.json`. Instead, write the embedded hooks JSON to a temporary file and pass that temp path to `merge_hooks_file` with `dry_run=True`:
+   - Write the embedded hooks JSON to a temporary file. Then merge the hooks by invoking the runtime module from the resolved plugin root:
 
      ```python
      import os
@@ -70,32 +56,14 @@ If the resolved layout is not the one this command was rendered for (paths in th
      with tempfile.NamedTemporaryFile(suffix=".json", mode="w", delete=False) as tmp:
          tmp.write(HOOKS_JSON_CONTENT)
          tmp_path = Path(tmp.name)
-     result = merge_hooks_file(Path(".claude/settings.json"), tmp_path, dry_run=True)
+     result = merge_hooks_file(Path(".claude/settings.json"), tmp_path, dry_run=DRY_RUN_FLAG)
      print(result.diff)
      ```
 
+   - Set `DRY_RUN_FLAG` to `True` when `--dry-run` is active, `False` otherwise.
    - On invalid settings JSON or `HookMergeError`, stop and ask the user to fix the issue manually before retrying.
 
-6. Write `.specguard-version` (project root) verbatim, substituting `installed_at` with the current ISO 8601 UTC timestamp and `plugin_source` as computed below.
-
-   Compute `plugin_source` from the marker file shipped inside the plugin:
-   ```python
-   marker = plugin_root / ".plugin_source"
-   plugin_source = marker.read_text(encoding="utf-8").strip() if marker.exists() else "local-dist"
-   # possible literal values: "github-release-v<version>" (tarball install) or "local-dist" (dev install)
-   ```
-
-   Then write:
-   ```toml
-   specguard_version = "{{ specguard_version }}"
-   agent = "claude"
-   spec = "{{ layout_name }}"
-   layout = "{{ layout_name }}"
-   installed_at = "<ISO 8601 UTC now>"
-   plugin_source = "<computed above>"
-   ```
-
-7. Output a structured report:
+6. Output a structured report:
    - Created: <files>
    - Updated: <files>
    - Skipped: <files with reason>
@@ -162,7 +130,7 @@ If `--spec none`, drop the entire "Working with the surrounding spec tool" subse
 
 ## Embedded asset: hooks settings.json snippet
 
-This is the verbatim JSON to write to `.specguard/hooks.snippet.json`; it is then auto-merged into `.claude/settings.json` via `specguard.hooks_merge`.
+This is the verbatim JSON used as the hooks snippet source for `specguard.hooks_merge`.
 
 ```json
 <!-- inject:hooks-snippet -->
