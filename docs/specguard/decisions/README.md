@@ -19,7 +19,7 @@
 2. 改变核心目录/布局抽象
 3. 引入外部依赖或 runtime
 4. 改变 agent/layout adapter 边界
-5. 推翻 [design.md](../design.md) 或已接受 ADR 的明确陈���
+5. 推翻 [design.md](../design.md) 或已接受 ADR 的明确陈述
 
 ## 模板
 
