@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Changed
+- `/specguard:check` no longer accepts the v0.1 `semantic` review package mode; semantic findings should be produced in the current Claude conversation rather than written to `.specguard/reviews/`.
+- `/specguard:upgrade` now stops when `.specguard-version` is missing, short-circuits with `already up to date` when the installed version equals the plugin version, and requires a dry-run diff summary plus user confirmation before writing files.
+
+### Fixed
+- README Development instructions now clone `https://github.com/saberhaha/specguard.git` instead of using a placeholder URL.
+- `/specguard:init` embedded hooks snippet wording now matches the auto-merge behavior implemented by `specguard.hooks_merge`.
+
 ## v0.2.0 - 2026-05-01
 
 ### Added

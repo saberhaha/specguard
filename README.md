@@ -71,7 +71,7 @@ It is not a replacement for spec-driven development tools. It is a **governance 
 Render the plugin from source for local dogfood:
 
 ```bash
-git clone <this repo>
+git clone https://github.com/saberhaha/specguard.git
 cd specguard
 uv sync
 uv run pytest
