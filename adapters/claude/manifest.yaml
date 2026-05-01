@@ -48,30 +48,5 @@ renders:
     inject:
       - source: core/command-prompts/check.md
         marker: <!-- inject:prompt -->
-  - source: plugin/commands/upgrade.md.tpl
-    output: commands/upgrade.md
-    inject:
-      - source: core/command-prompts/upgrade.md
-        marker: <!-- inject:prompt -->
-      - source: core/rules/five-laws.md
-        marker: <!-- inject:five-laws -->
-      - source: core/rules/adr-checklist.md
-        marker: <!-- inject:adr-checklist -->
-      - source: core/rules/design-sync.md
-        marker: <!-- inject:design-sync -->
-      - source: core/templates/design.md.tpl
-        marker: <!-- inject:design-template -->
-        raw: true
-      - source: core/templates/decisions/README.md.tpl
-        marker: <!-- inject:decisions-readme-template -->
-        raw: true
-      - source: core/templates/decisions/TEMPLATE.md.tpl
-        marker: <!-- inject:decisions-template -->
-        raw: true
-      - source: core/templates/specs/TEMPLATE.md.tpl
-        marker: <!-- inject:specs-template -->
-        raw: true
-      - source: adapters/claude/plugin/hooks/settings.json.snippet.tpl
-        marker: <!-- inject:hooks-snippet -->
   - source: plugin/hooks/settings.json.snippet.tpl
     output: hooks/settings.json.snippet
