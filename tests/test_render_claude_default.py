@@ -112,6 +112,7 @@ def test_upgrade_command_embeds_asset_sections(dist: Path):
 
 def test_check_command_removes_semantic_review_package(dist: Path):
     cmd = (dist / "commands/check.md").read_text(encoding="utf-8")
+    assert "semantic" not in cmd
     assert "Optional positional: `semantic`" not in cmd
     assert "## Semantic mode" not in cmd
     assert ".specguard/reviews" not in cmd
