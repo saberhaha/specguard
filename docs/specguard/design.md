@@ -1,156 +1,199 @@
-# specguard 设计（Living Document）
+# specguard 设计（Living Architecture）
 
-**Last verified against code**: 2026-05-01 @ commit `3a04488`
-**Authoritative for**: 全文
+**Last verified against code**: 2026-05-01 @ commit `7750a06`
+**Authoritative for**: 当前架构、命令语义、数据契约、安全边界
 **ADR 索引**: [decisions/README.md](decisions/README.md)
 
 > 本文档是 specguard 项目当前架构唯一真相。代码与本文档不一致即为缺陷。
-> 决策动机与历史在 decisions/，本文档只反映"现在是什么"。
+> 决策动机与历史在 decisions/，本文档只反映“现在是什么”。
 
 ---
 
-## 1. 项目定位
+## 1. 产品定位与边界
 
-specguard 是一个**项目治理脚手架**：把 living design + ADR 治理体系装进任意 AI 协作的项目，并通过 skill / rules / hooks 让 AI 自动遵守。
+specguard 是一个项目治理脚手架：把 living design、ADR、spec discipline、Claude hooks、slash commands 打包成可安装的 Claude Code plugin。
 
-它**不是** OpenSpec / Spec Kit / Superpowers 的替代品；它是叠在它们之上的治理层。
+它的边界：
+- 交付治理 scaffold，不接管用户项目的业务代码生成。
+- 约束 AI 协作流程，不替代 OpenSpec、Superpowers、Spec Kit。
+- 当前唯一可执行 agent adapter 是 Claude Code；Cursor、Codex、generic adapter 是 v0.3+ 留位。
+- 当前唯一分发方式是 GitHub Release tarball；marketplace install 是 v0.3+ 留位。
 
----
+## 2. 端到端流程
 
-## 2. 三层架构
+### 2.1 Build / Release flow
 
+```mermaid
+flowchart TD
+  A[core assets] --> R[src/specguard/render.py]
+  L[layout manifest] --> R
+  C[claude adapter manifest] --> R
+  R --> D[dist/claude/<layout>]
+  D --> M[runtime/specguard/*.py copied]
+  M --> S[.plugin_source stamped]
+  S --> T[release tarball]
 ```
-core/  (agent-neutral + layout-neutral 资产)
-   ↑
-layouts/  (3 种 spec 工具 layout)
-   ↑
-adapters/<target>/  (MVP 仅 claude)
-   ↑
-src/specguard/render.py  (build-time 渲染管线)
-   ↓
-dist/<target>/<layout>/  (可发布的 plugin 包；v0.2 起由 GitHub Actions 打包为 release tarball，见 ADR-0003)
+
+### 2.2 Init flow
+
+```mermaid
+flowchart TD
+  A[/specguard:init] --> B[parse --ai / --spec / --dry-run]
+  B --> C[confirm rendered layout paths]
+  C --> D[create missing design / decisions / spec templates]
+  C --> E[insert or replace CLAUDE.md specguard block]
+  C --> F[write .specguard/hooks.snippet.json]
+  F --> G[specguard.hooks_merge merges .claude/settings.json]
+  G --> H[write .specguard-version]
 ```
 
-### core/
+### 2.3 Check flow
 
-agent-neutral + layout-neutral 治理资产，路径全部使用 `{{ paths.* }}` 变量：
+```mermaid
+flowchart TD
+  A[/specguard:check] --> B[read project governance files]
+  B --> C[run 13 structural checks]
+  C --> D{errors?}
+  D -->|yes| E[print error report]
+  D -->|no| F[print warning / success report]
+  E --> G[no project writes]
+  F --> G
+```
 
-- [core/version](../../core/version) — 当前 specguard 版本（`0.2.0`）
-- [core/rules/](../../core/rules) — 五条铁律 / ADR checklist / design 同步规则
-- [core/templates/](../../core/templates) — design.md / decisions/* / specs/* 模板（注入 init prompt 时按 `raw: true` 不让 Jinja 求值）
-- [core/command-prompts/](../../core/command-prompts) — init / check / upgrade 三个命令的核心 prompt
-- [core/policies/](../../core/policies) — 与 OpenSpec / Superpowers 协作的 policy 段
+### 2.4 Upgrade flow
 
-### layouts/
+```mermaid
+flowchart TD
+  A[/specguard:upgrade] --> B{.specguard-version exists?}
+  B -->|no| C[stop: run /specguard:init first]
+  B -->|yes| D[read CLAUDE_PLUGIN_ROOT/version]
+  D --> E{same version?}
+  E -->|yes| F[print already up to date]
+  E -->|no| G[build replacements from embedded assets]
+  G --> H[upgrade_project dry_run=True]
+  H --> I[print diff_summary]
+  I --> J{user confirms?}
+  J -->|no| K[stop without writing]
+  J -->|yes| L[upgrade_project dry_run=False]
+```
 
-每种 layout 一个 [manifest.yaml](../../layouts/specguard-default/manifest.yaml)，描述：
-- `name`：layout 名（写入 `.specguard-version` `layout` 字段）
-- `paths.{design, decisions_dir, specs_dir, plans_dir, [changes_dir]}`：项目内目标路径
-- `inject_policies`：要嵌入 init prompt 的 core/policies 文件
+## 3. 架构分层
 
-| layout | design/ADR 位置 | spec 位置 |
-|---|---|---|
-| `specguard-default` | `docs/specguard/` | `docs/specguard/specs/` |
-| `superpowers` | `docs/superpowers/` | `docs/superpowers/specs/` |
-| `openspec-sidecar` | `docs/specguard/` | `openspec/specs/` + `openspec/changes/` |
+### 3.1 core
 
-### adapters/claude/
+`core/` 保存 agent-neutral、layout-neutral 治理资产：version、rules、templates、command prompts、policies。
 
-唯一 agent target。[adapters/claude/manifest.yaml](../../adapters/claude/manifest.yaml) 列出 6 个渲染条目：
+### 3.2 layouts
 
-1. `plugin/.claude-plugin/plugin.json.tpl` → `.claude-plugin/plugin.json`
-2. `plugin/skills/design-governance/SKILL.md.tpl` → `skills/design-governance/SKILL.md`，注入 5 laws / ADR checklist / design-sync
-3. `plugin/commands/init.md.tpl` → `commands/init.md`，注入 prompt + 5 laws + ADR checklist + design-sync + policy + 4 个 template（`raw`）+ hooks snippet
-4. `plugin/commands/check.md.tpl` → `commands/check.md`，注入 prompt
-5. `plugin/commands/upgrade.md.tpl` → `commands/upgrade.md`，注入 prompt + 5 laws / ADR checklist / design-sync + 4 个 template（`raw`）+ hooks snippet；upgrade prompt 由这些 embedded sections 构造 `upgrade_project()` 的 replacements（见 [ADR-0004](decisions/0004-python-modules-for-runtime-algorithms.md)）
-6. `plugin/hooks/settings.json.snippet.tpl` → `hooks/settings.json.snippet`
+`layouts/` 描述三种目录布局：`specguard-default`、`superpowers`、`openspec-sidecar`。layout 只声明路径与 policy 注入，不包含 agent runtime 逻辑。
 
-**关键决定**：plugin name = `specguard`，**没有** `commandNamespace` 字段，因此 Claude Code 的 slash 命令固定为 `/specguard:init`、`/specguard:check`、`/specguard:upgrade`（见 [ADR-0001](decisions/0001-plugin-name-command-namespace.md)）。
+### 3.3 adapters/claude
 
-### src/specguard/
+`adapters/claude/` 渲染 Claude Code plugin：plugin.json、design-governance skill、init/check/upgrade commands、hooks snippet。plugin name 固定为 `specguard`，没有 `commandNamespace` 字段，因此命令固定为 `/specguard:init`、`/specguard:check`、`/specguard:upgrade`（见 ADR-0001）。
 
-- [manifest.py](../../src/specguard/manifest.py) — `LayoutManifest.load()` / `AdapterManifest.load()`，解析 + 校验 yaml manifest，缺字段抛 `ManifestError`
-- [render.py](../../src/specguard/render.py) — `render(repo_root, target, layout, out_dir)` 把 core + layout + adapter 渲染到 `dist/<target>/<layout>/`：
-  1. 加载 layout / adapter manifest
-  2. 给 Jinja2 注册 `regex_escape`（双反斜杠化以适配 JSON 字面量）和 `relative_to_design`（路径相对 design dir）filter
-  3. 上下文 = `{paths, specguard_version, layout_name}`
-  4. 按 manifest `renders` 列表逐文件处理：先把 inject 文件文本替换 marker（标 `raw: true` 的注入会被 `{% raw %}{% endraw %}` 包住，避免 Jinja 求值），再替换 layout-specific policy marker，最后整体过 Jinja 渲染
-  5. 把 `src/specguard/{__init__,hooks_merge,upgrade}.py` 复制到 `<out_dir>/runtime/specguard/`，供 `/specguard:init` 与 `/specguard:upgrade` 在用户项目里通过 `CLAUDE_PLUGIN_ROOT/runtime` 导入（见 [ADR-0004](decisions/0004-python-modules-for-runtime-algorithms.md)）
-  - 所有文本 IO 使用显式 `encoding="utf-8"`
-- [hooks_merge.py](../../src/specguard/hooks_merge.py) — `.claude/settings.json` 与 `.specguard/hooks.snippet.json` 的解析、合并、幂等替换、dry-run diff 文本生成；由 `/specguard:init` prompt 调用（见 [ADR-0004](decisions/0004-python-modules-for-runtime-algorithms.md)）
-- [upgrade.py](../../src/specguard/upgrade.py) — 5 个 marker 区域（CLAUDE.md / settings.json hooks / specs TEMPLATE / decisions TEMPLATE / decisions README 规则段）的检测、diff、替换、conflict 识别、`.specguard-version` legacy 补写；由 `/specguard:upgrade` prompt 调用（见 [ADR-0004](decisions/0004-python-modules-for-runtime-algorithms.md)）
-- console script `specguard-render` = `specguard.render:main`，stdlib `argparse`
+### 3.4 src/specguard
 
----
+`src/specguard/render.py` 是 build-time 渲染管线。`src/specguard/hooks_merge.py` 与 `src/specguard/upgrade.py` 是 runtime-safe Python modules，由 rendered prompts 通过 `CLAUDE_PLUGIN_ROOT/runtime` 导入（见 ADR-0004）。
 
-## 3. `/specguard:*` 命令运行时行为
+## 4. 数据契约
 
-### `/specguard:init`
+执行强度分三类：
 
-1. 解析 `--ai` `--spec`（auto 时探测 `.claude/`、`docs/superpowers/`、`openspec/`）
-2. 校验 layout 与本次渲染产物匹配（不允许运行时改 paths）
-3. 用 prompt 内嵌的 4 个 template 写出缺失的 design.md / decisions README+TEMPLATE / specs/TEMPLATE.md
-4. 在 `CLAUDE.md` 顶部插入或替换 `<!-- specguard:start --> ... <!-- specguard:end -->` 块（块内含 5 laws / ADR checklist / design-sync / 选中 layout 的 policy）
-5. 写出 `.specguard/hooks.snippet.json`，并按 `statusMessage` 前缀 `specguard:` 自动幂等合并到 `.claude/settings.json`；支持 `--dry-run` 仅打印 diff 不落盘（见 [ADR-0002](decisions/0002-init-auto-merge-hooks.md)，推翻 [ADR-0001](decisions/0001-plugin-name-command-namespace.md) Consequences 中"不自动改 settings.json"约束）
-6. 写出 `.specguard-version`（`specguard_version`、`agent`、`spec=layout_name`、`layout=layout_name`、`installed_at`、`plugin_source` ∈ {`github-release-vX.Y.Z`, `local-dist`}）；`plugin_source` 通过 plugin root 下的 `.plugin_source` marker 识别 release tarball，缺失时 fallback 到 `local-dist`（见 [ADR-0003](decisions/0003-distribution-via-github-release.md)）
+- **机器强制**：pytest、render、runtime module 或 hooks 能稳定执行。
+- **治理强制**：`/specguard:check` 或 Claude prompt 明确检查并报告。
+- **用户契约**：由文档和 ADR 约束，当前不自动执行。
 
-### `/specguard:check`
+| # | 契约 | 强度 | 当前语义 |
+|---|---|---|---|
+| 1 | `.specguard-version` | 机器强制 | TOML-like file，含 `specguard_version`、`agent`、`spec`、`layout`、`installed_at`、`plugin_source`。 |
+| 2 | `.plugin_source` | 机器强制 | release tarball 写入 `github-release-v<version>`；本地 dist 缺失时 fallback 为 `local-dist`。 |
+| 3 | `CLAUDE.md` specguard block | 机器强制 | 只替换 `<!-- specguard:start -->` 到 `<!-- specguard:end -->` 区域。 |
+| 4 | decisions README rules marker | 机器强制 | 只替换 `<!-- specguard:rules:start -->` 到 `<!-- specguard:rules:end -->` 区域。 |
+| 5 | `.claude/settings.json` hooks | 机器强制 | 按 `statusMessage` 前缀 `specguard:` 幂等替换 specguard hooks，保留非 specguard hooks。 |
+| 6 | `.specguard/hooks.snippet.json` | 机器强制 | init 写入的 hook snippet source；check 要求存在。 |
+| 7 | 禁止新 `*-design.md` | 机器强制 | hooks 阻止新 dated design 文件；superpowers 历史 `*-design.md` 为 warning。 |
+| 8 | ADR 文件名 | 治理强制 | ADR 文件匹配 `^[0-9]{4}-[a-z0-9-]+\.md$`，README/TEMPLATE 例外。 |
+| 9 | `docs/specguard/design.md` | 用户契约 | 当前架构唯一真相；接口、数据结构、模块边界变更必须同步。 |
+| 10 | spec ADR 判断标题 | 治理强制 | 新 spec 必须含 `## ADR 级别决策识别`，存量文件可按 installed_at 豁免。 |
+| 11 | ADR supersede 引用 | 治理强制 | `Superseded by ADR-NNNN` 的目标 ADR 必须存在。 |
 
-13 项结构检查：design 存在、specs 下无 `*-design.md`（superpowers layout 下对老 `*-design.md` 文件降级为 warning，新文件仍要求 `*-spec.md`）、`decisions/README.md` 存在、ADR 文件名匹配 `^[0-9]{4}-[a-z0-9-]+\.md$`、ADR 编号连续、ADR 在索引中、design 引用的 ADR 存在、`Superseded by` 目标存在、spec 含 `## ADR 级别决策识别`（superpowers layout 下 `*-design.md` 例外）、CLAUDE.md 含 specguard 标记、`.specguard/hooks.snippet.json` 存在、`.claude/settings.json` 已合并 specguard hooks（缺失为 error，见 [ADR-0002](decisions/0002-init-auto-merge-hooks.md)）、`.specguard-version` 存在。
+## 5. 命令语义
 
-`semantic` 模式只生成 review package（prompt + context + findings template），不调用任何 LLM。
+### 5.1 通用规则
 
-### `/specguard:upgrade`
+所有 `/specguard:*` 命令使用 rendered prompt 中的 embedded assets，不在用户项目运行时搜索 plugin 源码目录。需要 Python runtime 时，只能通过 `CLAUDE_PLUGIN_ROOT/runtime` 导入 bundled module。
 
-读 `.specguard-version`，对比 plugin 当前 `core/version`，按 5 个 marker 区块输出 diff + 用户确认后替换；marker 外内容永不动：
-1. CLAUDE.md `<!-- specguard:start -->` ↔ `<!-- specguard:end -->` 块
-2. `.claude/settings.json` 中 `statusMessage` 前缀为 `specguard:` 的 hook 条目
-3. `{{ paths.specs_dir }}/TEMPLATE.md`
-4. `{{ paths.decisions_dir }}/TEMPLATE.md`
-5. `{{ paths.decisions_dir }}/README.md` 规则段
+### 5.2 `/specguard:init`
 
-对 v0.1.x（`.specguard-version` 缺 `plugin_source`）的项目按 legacy local install 处理，升级后补写 `plugin_source = "local-dist"`（见 [ADR-0003](decisions/0003-distribution-via-github-release.md)）。v0.1.x 的 `decisions/README.md` 不含 `<!-- specguard:rules:start -->` / `<!-- specguard:rules:end -->` marker；升级时会触发 `UpgradeConflict.manual_patch`，由用户显式复制 patch 后重试。
+`/specguard:init` 解析 `--ai <claude|cursor|codex|generic|auto>`、`--spec <none|openspec|superpowers|auto>`、`--dry-run`。当前只有 Claude adapter 可执行；非 Claude 选项是未来 adapter 留位。init 创建缺失 scaffold、更新 CLAUDE.md marker block、写 hooks snippet、通过 `specguard.hooks_merge` 自动合并 hooks、写 `.specguard-version`。
 
----
+### 5.3 `/specguard:check`
 
-## 4. Hooks
+`/specguard:check` 是只读结构治理检查，运行 13 项 structural checks 并输出 error/warning/report。它不接受 `semantic` 模式，不创建 `.specguard/reviews/`，不生成 `prompt.md`、`context.md` 或 `findings-template.md`（见 ADR-0005）。
 
-由 [adapters/claude/plugin/hooks/settings.json.snippet.tpl](../../adapters/claude/plugin/hooks/settings.json.snippet.tpl) 渲染产生，4 个 event：
+### 5.4 `/specguard:upgrade`
 
-| event | 行为 |
+`/specguard:upgrade` 缺 `.specguard-version` 时停止并提示先运行 `/specguard:init`。版本相等时输出 `already up to date` 并退出。版本不同时先调用 `upgrade_project(..., dry_run=True)` 生成 diff summary，展示给用户并等待确认；确认后才调用 `upgrade_project(..., dry_run=False)` 写入（见 ADR-0006）。
+
+### 5.5 prompt ↔ runtime Python API
+
+`/specguard:init` prompt 依赖 `specguard.hooks_merge.merge_hooks_file()`。`/specguard:upgrade` prompt 依赖 `specguard.upgrade.upgrade_project()`、`UpgradeResult.diff_summary`、`UpgradeConflict.manual_patch`。
+
+## 6. 不变量与安全边界
+
+- marker 外永不修改：CLAUDE.md 与 decisions README 只改 specguard marker 内文本。
+- `--dry-run` 与 `upgrade_project(..., dry_run=True)` 不写用户项目文件。
+- upgrade 两阶段写入：所有 marker 校验与新内容构建成功后，才进入写入阶段。
+- hooks 只按 `statusMessage` 前缀 `specguard:` 识别 specguard entries。
+- release/runtime 边界：release tarball 必须携带 `runtime/specguard/` 与 `.plugin_source`。
+- layout/adapter 边界：layout 不实现 agent 行为；adapter 不改变 layout paths。
+- check 只读：`/specguard:check` 不创建 review package 或其他项目文件。
+- specguard 不执行用户项目代码：render、hooks merge、upgrade 只读写治理文件与 JSON/TOML-like metadata。
+
+## 7. 测试策略
+
+### 7.1 风险 → 测试防线
+
+| 风险 | 测试防线 |
 |---|---|
-| SessionStart | 注入 5 条铁律 |
-| PreToolUse / Write | 拒绝 `*-design.md`（dated design）+ 校验 ADR 文件名 `NNNN-kebab-case.md` |
-| Stop | `src/` 改但 design / decisions/ 未改时 systemMessage 提醒 |
-| UserPromptSubmit | 用户提到"写 spec / 写 plan / 开始实施"时 additionalContext 提醒先做 ADR 判定 |
+| rendered command 残留 inject marker | `tests/test_render_claude_default.py` |
+| hooks merge 覆盖用户自定义 hooks | `tests/test_init_merge_hooks.py` |
+| upgrade conflict 后半写入 | `tests/test_dogfood_upgrade.py` |
+| release tarball 缺 runtime 或 provenance | `tests/test_render_basic.py`、`tests/test_release_workflow.py` |
+| layout path 漂移 | 三个 render layout 测试 |
 
-所有 hook 都用 `python3 -c` 解析 stdin JSON（不依赖 jq）；所有 `statusMessage` 以 `specguard:` 前缀，便于 idempotent merge 与 check 验证。`/specguard:init` 自动按该前缀把 specguard 条目幂等合并到 `.claude/settings.json`；非 specguard 条目原样保留（见 [ADR-0002](decisions/0002-init-auto-merge-hooks.md)）。
+### 7.2 改动类型 → 必跑测试
 
----
+| 改动类型 | 必跑测试 |
+|---|---|
+| command prompt | `uv run pytest tests/test_render_claude_default.py -q` |
+| hooks merge runtime | `uv run pytest tests/test_init_merge_hooks.py -q` |
+| upgrade runtime | `uv run pytest tests/test_dogfood_upgrade.py -q` |
+| render/release | `uv run pytest tests/test_render_basic.py tests/test_release_workflow.py -q` |
+| release candidate | `uv run pytest` + render 三 layout |
 
-## 5. 测试矩阵
+### 7.3 必须人工 dogfood
 
-`tests/` 下：
+- 新 release tarball：从 GitHub Release 下载后，在临时 git repo 运行 `/specguard:init`。
+- upgrade 行为：在含旧 `.specguard-version` 的临时 repo 运行 `/specguard:upgrade`，确认 diff summary 与写入路径一致。
+- hooks 行为：确认 `.claude/settings.json` 保留非 specguard hooks。
 
-- [test_smoke.py](../../tests/test_smoke.py) — package 可 import
-- [test_manifest.py](../../tests/test_manifest.py) — LayoutManifest / AdapterManifest 解析 + 缺字段错误
-- [test_render_basic.py](../../tests/test_render_basic.py) — render 产物存在 / inject 替换 / 路径替换 / version 替换 / 未知 layout 抛错 / runtime 模块复制到 dist
-- [test_render_claude_default.py](../../tests/test_render_claude_default.py) — 9 项断言：plugin.json 无 commandNamespace、SKILL 三段注入、commands frontmatter、hooks snippet 是合法 JSON、hooks 含正确 paths、init 含 `--dry-run` + `specguard.hooks_merge` + `CLAUDE_PLUGIN_ROOT` + tempfile + `.plugin_source` marker 读取、check 把缺失 hooks 当 error、upgrade 含 `specguard.upgrade` + `replacements = {` + `manual_patch`、upgrade command 嵌入 CLAUDE block / decisions README rules marker / hooks snippet 且无 `<!-- inject:` 残留
-- [test_render_claude_openspec.py](../../tests/test_render_claude_openspec.py) — 2 项断言
-- [test_render_claude_superpowers.py](../../tests/test_render_claude_superpowers.py) — 1 项断言
-- [test_dogfood_guard_ghost.py](../../tests/test_dogfood_guard_ghost.py) — guard-ghost 路径结构匹配（guard-ghost 不在则 skip）
-- [test_init_merge_hooks.py](../../tests/test_init_merge_hooks.py) — hooks 合并算法 / 幂等 / dry-run / 非法 JSON 不覆盖 / 保留非 specguard 条目
-- [test_dogfood_upgrade.py](../../tests/test_dogfood_upgrade.py) — 5 marker upgrade / marker 缺失或文件缺失 conflict 不写 / no-op 时 `changed=False` 且不改 mtime / `.specguard-version` legacy 补 `plugin_source` / `UpgradeConflict.manual_patch` 含路径 + marker + 新内容
-- [test_release_workflow.py](../../tests/test_release_workflow.py) — `.github/workflows/release.yml` 监听 `v*` tag、覆盖 3 个 layout、写 `.plugin_source = github-release-v${version}`、tag 与 `core/version` 校验、`tar -czf`、`softprops/action-gh-release`、`contents: write` 权限、`uv sync --frozen`、`core/version` 等于 `0.2.0`
+### 7.4 未覆盖风险
 
-合计 42 测试，全绿是构建产物可发布的硬条件。
+- Claude Code plugin runtime 对 `CLAUDE_PLUGIN_ROOT` 的暴露由 Claude Code 提供，pytest 只能覆盖 prompt 文案与本地 module 行为。
+- 真 Claude 对话中的用户确认交互无法完全由 pytest 模拟，需要 dogfood。
 
----
+## 8. 不在范围
 
-## 6. 不在范围（v0.3+）
+### 8.1 v0.3+ 留位
 
-- Cursor / Codex / generic adapter
-- Marketplace 打包 / `claude plugin install specguard`
-- `/specguard:check semantic` 真实 review package 验收
-- skill pressure tests
-- PR bot / GitHub Action / 中央 dashboard
+- Cursor / Codex / generic adapter。
+- Marketplace 分发。
+- skill pressure tests。
+- PR bot / GitHub Action 治理报告。
+- 中央 dashboard。
+- 多 agent adapter runtime。
+
+### 8.2 已删除
+
+- `/specguard:check semantic` review package 模式已删除（见 ADR-0005）。不再维护 `.specguard/reviews/`、`prompt.md`、`context.md`、`findings-template.md` 数据契约。
