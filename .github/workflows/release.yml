@@ -12,6 +12,10 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --frozen
       - name: Verify tag matches core/version
@@ -23,7 +27,23 @@ jobs:
             exit 1
           fi
       - run: uv run pytest
-      - name: Render and package layouts
+      - name: Configure git user (release bot)
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - name: Render plugins/ for marketplace
+        run: |
+          for layout in specguard-default superpowers openspec-sidecar; do
+            uv run specguard-render --target claude --layout "${layout}" --out "plugins/${layout}"
+          done
+      - name: Commit and push rendered plugins/
+        run: |
+          version=$(cat core/version)
+          git pull --rebase origin main
+          git add plugins/
+          git commit -m "chore(release): render plugins for v${version}" --allow-empty
+          git push origin HEAD:main
+      - name: Render and package tarballs
         run: |
           version=$(cat core/version)
           mkdir -p release
