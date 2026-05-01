@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.2.1 - 2026-05-01
 
 ### Changed
 - `/specguard:check` no longer accepts the v0.1 `semantic` review package mode; semantic findings should be produced in the current Claude conversation rather than written to `.specguard/reviews/`.
