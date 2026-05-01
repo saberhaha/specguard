@@ -30,7 +30,6 @@ jobs:
           for layout in specguard-default superpowers openspec-sidecar; do
             out="dist/claude/${layout}"
             uv run specguard-render --target claude --layout "${layout}" --out "${out}"
-            echo "github-release-v${version}" > "${out}/.plugin_source"
             tar -czf "release/specguard-claude-${layout}-v${version}.tar.gz" -C "${out}" .
           done
       - uses: softprops/action-gh-release@v2
