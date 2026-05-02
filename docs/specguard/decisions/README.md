@@ -14,6 +14,7 @@
 | [0006](0006-tighten-upgrade-interaction-and-version-handling.md) | 收紧 `/specguard:upgrade` 写入前交互与缺版本行为 | Superseded by ADR-0007 | design §5.4、§6 |
 | [0007](0007-withdraw-upgrade-and-simplify-contracts.md) | 撤回 `/specguard:upgrade` 并精简伪契约 | Accepted | design §5.4、§6、§8 |
 | [0008](0008-marketplace-distribution.md) | 通过 Claude Code marketplace 分发 specguard plugin | Accepted | design §2、§3.1、§6 |
+| [0009](0009-hooks-pressure-tests.md) | specguard hooks 的 shell 决策由 pytest 强制覆盖 | Accepted | design §6、§7.1、§7.4、§8.1 |
 
 后续若出现以下情况新增 ADR：
 
