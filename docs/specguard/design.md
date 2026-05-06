@@ -1,6 +1,6 @@
 # specguard 设计（Living Architecture）
 
-**Last verified against code**: 28e9b0e
+**Last verified against code**: 0d0d312
 **Authoritative for**: 当前架构、命令语义、数据契约、安全边界
 **ADR 索引**: [decisions/README.md](decisions/README.md)
 
@@ -16,7 +16,7 @@ specguard 是一个项目治理脚手架：通过 Claude Code 的 hooks、slash 
 它的边界：
 - 交付治理 scaffold，不接管用户项目的业务代码生成。
 - 约束 AI 协作流程，不替代 OpenSpec、Superpowers、Spec Kit。
-- 当前唯一可执行 agent adapter 是 Claude Code；Cursor、Codex、generic adapter 是 v0.3+ 留位。
+- 当前唯一可执行 agent adapter 是 Claude Code；Cursor、Codex、generic adapter 未实现。
 - 分发方式：GitHub Release tarball（见 ADR-0011）。
 
 ## 2. 端到端流程
@@ -96,7 +96,7 @@ flowchart TD
 | 3 | 禁止新 `*-design.md` | 机器强制 | hooks 阻止新 dated design 文件；superpowers 历史 `*-design.md` 为 warning。 |
 | 4 | ADR 文件名 | 治理强制 | ADR 文件匹配 `^[0-9]{4}-[a-z0-9-]+\.md$`，README/TEMPLATE 例外。 |
 | 5 | `docs/specguard/design.md` | 用户契约 | 当前架构唯一真相；接口、数据结构、模块边界变更必须同步。 |
-| 6 | spec ADR 判断标题 | 治理强制 | 新 spec 必须含 `## ADR 级别决策识别`，存量文件可按 installed_at 豁免。 |
+| 6 | spec ADR 判断标题 | 治理强制 | 新 spec 必须含 `## ADR 级别决策识别`。 |
 | 7 | ADR supersede 引用 | 治理强制 | `Superseded by ADR-NNNN` 的目标 ADR 必须存在。 |
 
 ## 5. 命令语义
@@ -147,9 +147,8 @@ rendered prompt 使用 embedded assets，不在用户项目运行时搜索 plugi
 
 ### 7.3 未覆盖风险
 
-- Claude Code plugin runtime 对 `CLAUDE_PLUGIN_ROOT` 的暴露由 Claude Code 提供，pytest 只能覆盖 prompt 文案与本地 module 行为。
-- 真 Claude 对话中的用户确认交互无法完全由 pytest 模拟，需要 dogfood。
-- 模型实际是否消化 SessionStart additionalContext（governance laws 是否被采纳）、UserPromptSubmit additionalContext（ADR judgement 提醒是否被执行）、Stop systemMessage（design 同步提醒是否被注意）。这些是 LLM 行为问题，pytest 无法覆盖；shell 决策本身已由 `tests/test_hook_*.py` 强制（见 ADR-0009）。
+- `CLAUDE_PLUGIN_ROOT` 的暴露由 Claude Code runtime 决定，pytest 无法覆盖。
+- 模型是否真正遵循 SessionStart / UserPromptSubmit / Stop 注入的 governance context 是 LLM 行为问题，pytest 无法覆盖；hook shell 决策本身已由 `tests/test_hook_*.py` 强制（见 ADR-0009）。
 
 ## 8. 不在范围
 
