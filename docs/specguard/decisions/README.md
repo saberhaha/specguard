@@ -13,9 +13,10 @@
 | [0005](0005-delete-check-semantic-review-package.md) | 删除 `/specguard:check semantic` review package 模式 | Accepted | design §5.3、§8 |
 | [0006](0006-tighten-upgrade-interaction-and-version-handling.md) | 收紧 `/specguard:upgrade` 写入前交互与缺版本行为 | Superseded by ADR-0007 | design §5.4、§6 |
 | [0007](0007-withdraw-upgrade-and-simplify-contracts.md) | 撤回 `/specguard:upgrade` 并精简伪契约 | Accepted | design §5.4、§6、§8 |
-| [0008](0008-marketplace-distribution.md) | 通过 Claude Code marketplace 分发 specguard plugin | Accepted | design §2、§3.1、§6 |
+| [0008](0008-marketplace-distribution.md) | 通过 Claude Code marketplace 分发 specguard plugin | Superseded by ADR-0011 | design §2、§3.1、§6 |
 | [0009](0009-hooks-pressure-tests.md) | specguard hooks 的 shell 决策由 pytest 强制覆盖 | Accepted | design §6、§7.1、§7.4、§8.1 |
 | [0010](0010-design-md-deletion-discipline.md) | design.md 减法纪律——每次修改前主动扫除冗余 | Accepted | core/rules/design-sync.md、CLAUDE.md |
+| [0011](0011-withdraw-marketplace-and-add-install-script.md) | 撤回 marketplace 分发并以 install.sh 替代 | Accepted | design §2、§3.5、§4、§6、§7.1、§7.2 |
 
 后续若出现以下情况新增 ADR：
 

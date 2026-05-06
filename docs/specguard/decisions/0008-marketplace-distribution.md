@@ -1,6 +1,6 @@
 # ADR 0008: 通过 Claude Code marketplace 分发 specguard plugin
 
-**状态**：Accepted
+**状态**：Superseded by ADR-0011
 **日期**：2026-05-01
 **拍板者**：用户（@saber，对话日期 2026-05-01）
 **取代**：—
