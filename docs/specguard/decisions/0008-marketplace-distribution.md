@@ -43,6 +43,10 @@ specguard 当前已有三种 layout（`specguard-default`、`specguard-superpowe
   - main 分支历史每次 release 多出一类 `chore(release): render plugins for v...` commit；语义类似 npm publish 把 `dist/` 提交到 git。
   - `plugins/` 目录下文件不能由人工编辑，否则会被 CI render 覆盖；通过 `README` 与 `CHANGELOG` 显式提示。
   - design.md 数据契约从 7 条扩展到 9 条（新增 `marketplace.json` schema、`plugins/<layout>/` 结构）；不变量从 7 条扩展到 8 条（新增 "`marketplace.json` 列出的 plugin path 必须 git tracked"）。
+- **Claude Code 上游限制**（v0.4.0 dogfood 抓到，2026-05-01，Claude Code v2.1.123）：
+  - marketplace 安装路径**不暴露 `CLAUDE_PLUGIN_ROOT`** 给 slash command runtime，导致 `/specguard:init` 在 hooks 合并步骤按设计停止报告 "CLAUDE_PLUGIN_ROOT is not set"。当前推荐用户使用 GitHub Release tarball + `--plugin-dir` 路径以获得 env 自动暴露；marketplace 路径作为 preview。
+  - `claude plugin install` 在同一 marketplace 多次执行间存在 `ENOTEMPTY: directory not empty` race，缓存目录可能瞬时缺失；retry 通常成功。
+  - 两条都是 Claude Code 自身限制（非 specguard bug），等待上游修复后 marketplace 路径可重新作为推荐 quickstart。
 - **同步更新**：
   - `docs/specguard/design.md`：§2 / §3.1 / §6 同步 marketplace 渠道、`plugins/<layout>/` 结构、新增数据契约与不变量；顶部 `Last verified against code` 更新为本切片 commit hash。
   - `docs/specguard/decisions/README.md`：索引表追加 0008 行。
