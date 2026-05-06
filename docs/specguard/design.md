@@ -1,6 +1,6 @@
 # specguard 设计（Living Architecture）
 
-**Last verified against code**: 83d5525
+**Last verified against code**: （待本切片最终 commit 后更新）
 **Authoritative for**: 当前架构、命令语义、数据契约、安全边界
 **ADR 索引**: [decisions/README.md](decisions/README.md)
 
@@ -138,6 +138,7 @@ flowchart TD
 - check 只读：`/specguard:check` 不创建 review package 或其他项目文件。
 - specguard 不执行用户项目代码：render、hooks merge 只读写治理文件与 JSON/TOML-like metadata。
 - marketplace plugin path 完整性：`.claude-plugin/marketplace.json` 列出的每个 plugin `source.path` 必须对应一个 git tracked 目录且含合法 `plugin.json`；`tests/test_marketplace_schema.py::test_marketplace_plugin_paths_exist_and_have_plugin_json` 强制保证（见 ADR-0008）。
+- 4 个 specguard hook 的 shell 决策由 pytest test_hook_*.py 强制覆盖（每 hook 一个文件、≥30 个用例）；模型采纳 governance context（SessionStart additionalContext、UserPromptSubmit additionalContext、Stop systemMessage）的实际行为仍需人工 dogfood 或未来 L2 真 Claude 端到端验证（见 ADR-0009）。
 
 ## 7. 测试策略
 
@@ -150,6 +151,8 @@ flowchart TD
 | release tarball 缺 runtime | `tests/test_render_basic.py`、`tests/test_release_workflow.py` |
 | layout path 漂移 | 三个 render layout 测试 |
 | `plugins/` 与 `src/` 脱同步导致 marketplace 用户拿到旧版本 | `release.yml` 在 build tarball 之前强制 render+commit+push `plugins/`，`pull --rebase` 防 race；`tests/test_release_workflow.py::test_release_workflow_renders_and_commits_plugins` 断言这个步骤顺序（见 ADR-0008）。 |
+| hooks shell 决策 / governance 触发词覆盖率 | `tests/test_hook_*.py`（每 hook 一个文件，覆盖 SessionStart 法则注入、PreToolUse:Write dated-design 拦截、PreToolUse:Write ADR 命名校验、Stop design 同步提醒、UserPromptSubmit 触发词检测）（见 ADR-0009） |
+| hooks shell 通过但模型忽略 additionalContext / systemMessage | L2 真 Claude 端到端验证延后到未来切片（API token 消耗）；当前依赖人工 dogfood（见 ADR-0009） |
 
 ### 7.2 改动类型 → 必跑测试
 
@@ -160,11 +163,13 @@ flowchart TD
 | render/release | `uv run pytest tests/test_render_basic.py tests/test_release_workflow.py -q` |
 | release candidate | `uv run pytest` + render 三 layout |
 | `marketplace.json` schema 修改 | `uv run pytest tests/test_marketplace_schema.py -q`。影响：会让所有 `marketplace add` 用户在下次 update 时重新 resolve plugin source；schema 不向前兼容会导致 plugin install 失败（见 ADR-0008）。 |
+| hooks `settings.json.snippet` 修改 | `uv run pytest tests/test_hook_*.py -q`（如果改的是 hook shell 行为则同步更新对应 `test_hook_*.py` 的断言；strict xfail 用例会主动 fail 提醒同步）（见 ADR-0009）。 |
 
 ### 7.3 必须人工 dogfood
 
 - 新 release tarball：从 GitHub Release 下载后，在临时 git repo 运行 `/specguard:init`。
-- hooks 行为：确认 `.claude/settings.json` 保留非 specguard hooks。
+- hooks shell 决策已 pytest 自动化（见 ADR-0009）；dogfood 仅核实 init/check/marketplace 流程与模型对 governance context 的实际响应（是否真的采纳 SessionStart 法则、ADR judgement 提醒、design 同步提醒）。
+- v0.5.0 dogfood 记录（待 v0.5.0 release 后回填）：spot-check 三个 layout 的 init+check + 至少一次 PreToolUse:Write 实际 deny case 在真 Claude 会话中触发的证据。
 - v0.4.0 dogfood 记录（2026-05-01，commit 83d5525，release v0.4.0）：`claude plugin marketplace add saberhaha/specguard` 成功；`claude plugin install` 三个 plugin（specguard-default / specguard-superpowers / specguard-openspec-sidecar）报告"Successfully installed"。`/specguard:init --ai claude --spec none` 在 specguard-default 下创建了 design.md / decisions / specs 治理 scaffold。**已知限制**：（1）Claude Code v2.1.123 marketplace 安装路径**不暴露 `CLAUDE_PLUGIN_ROOT`**，导致 init prompt 在 hooks 合并步骤按设计停止报告 "CLAUDE_PLUGIN_ROOT is not set"；（2）`claude plugin install` 在同 marketplace 多次执行间存在 `ENOTEMPTY: directory not empty` race，缓存目录可能瞬时缺失。两项均为 Claude Code 自身限制（非 specguard bug），暂时推荐用户使用 GitHub Release tarball + `--plugin-dir` fallback（README "Alternative" 段）以获得 `CLAUDE_PLUGIN_ROOT` 自动暴露。
 - v0.3.0 dogfood 记录（2026-05-01，commit 9bf394e，release v0.3.0）：在 `/tmp/sg-dog-v030/<layout>/repo` 三个临时 git repo 各跑一次 `/specguard:init --ai claude --spec none` 与 `/specguard:check`。三 layout（specguard-default / superpowers / openspec-sidecar）init 全部成功创建治理文件并自动合并 hooks；check 输出 11 项结构检查，0 errors / 0 warnings。Tarball 验证：commands 仅含 `init.md` + `check.md`，runtime 仅含 `__init__.py` + `hooks_merge.py`，无 `.plugin_source`、`.specguard-version`、`.specguard/hooks.snippet.json`、decisions/README rules marker。
 
@@ -172,13 +177,14 @@ flowchart TD
 
 - Claude Code plugin runtime 对 `CLAUDE_PLUGIN_ROOT` 的暴露由 Claude Code 提供，pytest 只能覆盖 prompt 文案与本地 module 行为。
 - 真 Claude 对话中的用户确认交互无法完全由 pytest 模拟，需要 dogfood。
+- 模型实际是否消化 SessionStart additionalContext（governance laws 是否被采纳）、UserPromptSubmit additionalContext（ADR judgement 提醒是否被执行）、Stop systemMessage（design 同步提醒是否被注意）。这些是 LLM 行为问题，pytest 无法覆盖；shell 决策本身已由 `tests/test_hook_*.py` 强制（见 ADR-0009）。
 
 ## 8. 不在范围
 
-### 8.1 v0.4+ 留位
+### 8.1 v0.5+ 留位
 
 - Cursor / Codex / generic adapter。
-- skill pressure tests。
+- L2 真 Claude 端到端 hook 触发验证（API token 消耗版）。
 - PR bot / GitHub Action 治理报告。
 - 中央 dashboard。
 - 多 agent adapter runtime。

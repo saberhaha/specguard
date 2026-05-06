@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.5.0 - 2026-05-02
+
+### Added
+
+- `tests/test_hook_session_start.py`: 2 tests verifying SessionStart hook injects all five governance laws with resolved layout paths.
+- `tests/test_hook_pretooluse_dated_design.py`: 5 tests + 1 strict xfail verifying PreToolUse:Write blocks `<specs_dir>/*-design.md` while allowing legitimate files. Uppercase `.MD` bypass locked as known gap (ADR-0009).
+- `tests/test_hook_pretooluse_adr_filename.py`: 11 tests verifying PreToolUse:Write validates `NNNN-kebab-case.md` ADR filenames and exempts `README.md`/`TEMPLATE.md`.
+- `tests/test_hook_stop_design_sync.py`: 6 tests using tmp git repo to verify Stop hook emits design-sync reminder only when src/ changes without design.md/decisions/ updates.
+- `tests/test_hook_userprompt_adr.py`: 12 tests verifying UserPromptSubmit hook fires ADR-judgement reminder on English+Chinese trigger keywords and stays silent on normal chat.
+- `tests/_hook_helpers.py` + `tests/conftest.py`: session-scoped `rendered_snippet` fixture extracts hook commands from rendered `settings.json.snippet`; `run_hook_command` drives hooks via `subprocess sh -c` with mock JSON stdin.
+- ADR-0009: promotes hooks shell decision coverage from "must dogfood manually" to "pytest enforced".
+
+### Changed
+
+- design.md §6 invariants 8→9 (hooks shell decision coverage by pytest); §7.1 risk table updated; §7.4 "uncovered risk" narrowed to model-behavior layer; §8.1 removes "skill pressure tests" shipped item, adds "L2 real Claude end-to-end" backlog.
+
+### Notes
+
+- Hook shell logic is NOT modified in this slice. Known boundaries (case-sensitive `.MD` bypass, SessionStart stdout trailing `}`) are recorded via strict xfail / JSONDecoder.raw_decode, not fixed.
+- L2 real Claude end-to-end hook verification (burning API tokens) deferred to a future slice.
+
 ## v0.4.0 - 2026-05-01
 
 ### Added
