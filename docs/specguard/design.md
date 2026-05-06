@@ -1,6 +1,6 @@
 # specguard 设计（Living Architecture）
 
-**Last verified against code**: （待本切片最终 commit 后更新）
+**Last verified against code**: 05d3cf3
 **Authoritative for**: 当前架构、命令语义、数据契约、安全边界
 **ADR 索引**: [decisions/README.md](decisions/README.md)
 
@@ -169,7 +169,7 @@ flowchart TD
 
 - 新 release tarball：从 GitHub Release 下载后，在临时 git repo 运行 `/specguard:init`。
 - hooks shell 决策已 pytest 自动化（见 ADR-0009）；dogfood 仅核实 init/check/marketplace 流程与模型对 governance context 的实际响应（是否真的采纳 SessionStart 法则、ADR judgement 提醒、design 同步提醒）。
-- v0.5.0 dogfood 记录（待 v0.5.0 release 后回填）：spot-check 三个 layout 的 init+check + 至少一次 PreToolUse:Write 实际 deny case 在真 Claude 会话中触发的证据。
+- v0.5.0 dogfood 记录（2026-05-02，commit 05d3cf3，release v0.5.0）：从 GitHub Release 下载 `specguard-claude-specguard-default-v0.5.0.tar.gz`，在 `/tmp/sg-dog-v050/repo` 临时 git repo 跑 `claude --plugin-dir <unpacked> -p '/specguard:init --ai claude --spec none'`。结果：init 成功创建 design.md / decisions / specs scaffold + CLAUDE.md specguard 块；`.claude/settings.json.hooks` 含 4 个 event（SessionStart / PreToolUse / Stop / UserPromptSubmit）共 9 个 specguard 字串命中。Hook ���到端实证：`claude -p 'Use Write tool to create docs/specguard/specs/foo-design.md'` → 模型拒绝执行并引用"SpecGuard 第 3 条法则：禁止在 specs/ 下新建 *-design.md 文件"，证明 SessionStart 法则注入 + PreToolUse:Write dated-design 拦截在真 Claude 会话中按预期生效。pytest 78 passed + 1 xfailed 全绿。
 - v0.4.0 dogfood 记录（2026-05-01，commit 83d5525，release v0.4.0）：`claude plugin marketplace add saberhaha/specguard` 成功；`claude plugin install` 三个 plugin（specguard-default / specguard-superpowers / specguard-openspec-sidecar）报告"Successfully installed"。`/specguard:init --ai claude --spec none` 在 specguard-default 下创建了 design.md / decisions / specs 治理 scaffold。**已知限制**：（1）Claude Code v2.1.123 marketplace 安装路径**不暴露 `CLAUDE_PLUGIN_ROOT`**，导致 init prompt 在 hooks 合并步骤按设计停止报告 "CLAUDE_PLUGIN_ROOT is not set"；（2）`claude plugin install` 在同 marketplace 多次执行间存在 `ENOTEMPTY: directory not empty` race，缓存目录可能瞬时缺失。两项均为 Claude Code 自身限制（非 specguard bug），暂时推荐用户使用 GitHub Release tarball + `--plugin-dir` fallback（README "Alternative" 段）以获得 `CLAUDE_PLUGIN_ROOT` 自动暴露。
 - v0.3.0 dogfood 记录（2026-05-01，commit 9bf394e，release v0.3.0）：在 `/tmp/sg-dog-v030/<layout>/repo` 三个临时 git repo 各跑一次 `/specguard:init --ai claude --spec none` 与 `/specguard:check`。三 layout（specguard-default / superpowers / openspec-sidecar）init 全部成功创建治理文件并自动合并 hooks；check 输出 11 项结构检查，0 errors / 0 warnings。Tarball 验证：commands 仅含 `init.md` + `check.md`，runtime 仅含 `__init__.py` + `hooks_merge.py`，无 `.plugin_source`、`.specguard-version`、`.specguard/hooks.snippet.json`、decisions/README rules marker。
 
