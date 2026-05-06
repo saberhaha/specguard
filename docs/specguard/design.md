@@ -120,7 +120,7 @@ rendered prompt 使用 embedded assets，不在用户项目运行时搜索 plugi
 - layout/adapter 边界：layout 不实现 agent 行为；adapter 不改变 layout paths。
 - check 只读：`/specguard:check` 不创建 review package 或其他项目文件。
 - specguard 不执行用户项目代码：render、hooks merge 只读写治理文件与 JSON/TOML-like metadata。
-- 4 个 specguard hook 的 shell 决策由 pytest test_hook_*.py 强制覆盖（每 hook 一个文件、≥30 个用例）；模型采纳 governance context（SessionStart additionalContext、UserPromptSubmit additionalContext、Stop systemMessage）的实际行为仍需人工 dogfood 或未来 L2 真 Claude 端到端验证（见 ADR-0009）。
+- 4 个 specguard hook 的 shell 决策由 pytest `tests/test_hook_*.py` 强制覆盖（见 ADR-0009）；模型采纳 governance context 的实际行为仍需人工 dogfood 或未来 L2 验证。
 
 ## 7. 测试策略
 
@@ -132,8 +132,8 @@ rendered prompt 使用 embedded assets，不在用户项目运行时搜索 plugi
 | hooks merge 覆盖用户自定义 hooks | `tests/test_init_merge_hooks.py` |
 | release tarball 缺 runtime | `tests/test_render_basic.py`、`tests/test_release_workflow.py` |
 | layout path 漂移 | 三个 render layout 测试 |
-| hooks shell 决策 / governance 触发词覆盖率 | `tests/test_hook_*.py`（每 hook 一个文件，覆盖 SessionStart 法则注入、PreToolUse:Write dated-design 拦截、PreToolUse:Write ADR 命名校验、Stop design 同步提醒、UserPromptSubmit 触发词检测）（见 ADR-0009） |
-| hooks shell 通过但模型忽略 additionalContext / systemMessage | L2 真 Claude 端到端验证延后到未来切片（API token 消耗）；当前依赖人工 dogfood（见 ADR-0009） |
+| hooks shell 决策 / governance 触发词覆盖率 | `tests/test_hook_*.py`（见 ADR-0009） |
+| hooks shell 通过但模型忽略 additionalContext / systemMessage | 人工 dogfood；L2 真 Claude 端到端验证延后（见 ADR-0009） |
 
 ### 7.2 改动类型 → 必跑测试
 
@@ -143,7 +143,7 @@ rendered prompt 使用 embedded assets，不在用户项目运行时搜索 plugi
 | hooks merge runtime | `uv run pytest tests/test_init_merge_hooks.py -q` |
 | render/release | `uv run pytest tests/test_render_basic.py tests/test_release_workflow.py -q` |
 | release candidate | `uv run pytest` + render 三 layout |
-| hooks `settings.json.snippet` 修改 | `uv run pytest tests/test_hook_*.py -q`（如果改的是 hook shell 行为则同步更新对应 `test_hook_*.py` 的断言；strict xfail 用例会主动 fail 提醒同步）（见 ADR-0009）。 |
+| hooks `settings.json.snippet` 修改 | `uv run pytest tests/test_hook_*.py -q`（见 ADR-0009） |
 
 ### 7.3 未覆盖风险
 
