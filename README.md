@@ -39,22 +39,6 @@ claude --plugin-dir ~/.local/share/specguard/plugins/specguard-default \
 - `specguard-superpowers` — design/ADR/spec 放在 `docs/superpowers/`
 - `specguard-openspec-sidecar` — design/ADR 放在 `docs/specguard/`，specs 放在 `openspec/`
 
-### 备选：marketplace 安装（preview）
-
-`.claude-plugin/marketplace.json` 发布了三个插件（`specguard-default`、`specguard-superpowers`、`specguard-openspec-sidecar`）：
-
-```bash
-claude plugin marketplace add saberhaha/specguard
-claude plugin install specguard-default@specguard
-```
-
-**Claude Code v2.1.123 已知限制（2026-05-01 验证）：**
-
-1. marketplace 安装路径不暴露 `CLAUDE_PLUGIN_ROOT`，`/specguard:init` 能创建治理脚手架但无法自动合并 hooks。完整功能请用上方 tarball 方式安装。
-2. 同一 marketplace 下多个插件连续 install 偶发 `ENOTEMPTY` 竞争，重试通常成功。
-
-两条均为 Claude Code 自身的问题，等上游修复后 marketplace 路径即可作为推荐安装方式。
-
 ## 为什么做 specguard
 
 OpenSpec / Spec Kit / Superpowers 专注于驱动单次 AI 编码会话。specguard 关注的是更底层的一层：
@@ -71,7 +55,6 @@ OpenSpec / Spec Kit / Superpowers 专注于驱动单次 AI 编码会话。specgu
 | 项目 | 状态 |
 |---|---|
 | Claude Code 插件（tarball 安装） | 可用 |
-| Marketplace 安装 | preview（见已知限制） |
 | Cursor / Codex 适配器 | 未实现 |
 
 ## 开发
