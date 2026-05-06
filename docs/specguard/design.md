@@ -25,13 +25,13 @@ specguard 是一个项目治理脚手架：通过 Claude Code 的 hooks、slash 
 
 ```mermaid
 flowchart TD
-  T[git tag v*] --> CI[CI checkout]
+  T["git tag v*"] --> CI[CI checkout]
   CI --> A[core assets]
-  A --> RP[src/specguard/render.py]
+  A --> RP["src/specguard/render.py"]
   L[layout manifest] --> RP
   C[claude adapter manifest] --> RP
-  RP --> RD[dist/claude/<layout>]
-  RD --> M[runtime/specguard/*.py copied]
+  RP --> RD["dist/claude/{layout}"]
+  RD --> M["runtime/specguard/*.py copied"]
   M --> TB[release tarball]
   TB --> GR[GitHub Release]
 ```
@@ -42,19 +42,19 @@ tag 触发 → CI checkout → render dist/ → build tarball → 发布 GH Rele
 
 ```mermaid
 flowchart TD
-  A[/specguard:init] --> B[parse --ai / --spec / --dry-run]
+  A["/specguard:init"] --> B["parse --ai / --spec / --dry-run"]
   B --> C[confirm rendered layout paths]
   C --> D[create missing design / decisions / spec templates]
   C --> E[insert or replace CLAUDE.md specguard block]
   C --> F[write hooks snippet to tempfile]
-  F --> G[specguard.hooks_merge merges .claude/settings.json]
+  F --> G["specguard.hooks_merge merges .claude/settings.json"]
 ```
 
 ### 2.3 Check flow
 
 ```mermaid
 flowchart TD
-  A[/specguard:check] --> B[read project governance files]
+  A["/specguard:check"] --> B[read project governance files]
   B --> C[run 11 structural checks]
   C --> D{errors?}
   D -->|yes| E[print error report]
