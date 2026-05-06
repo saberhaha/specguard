@@ -1,10 +1,10 @@
 # specguard
 
-> AI 辅助开发的项目治理脚手架。以 Claude Code 插件形式交付 living design + ADR + spec 纪律（Cursor / Codex 适配器后续迭代）。
+> AI 辅助开发的项目治理脚手架。通过 Claude Code 的 hooks、slash commands 和 CLAUDE.md 注入，强制 AI 辅助开发遵循 living design / ADR / spec 纪律。
 
 specguard 的定位：
 
-- agent 中立（Claude Code 优先）
+- 当前只支持 Claude Code；Cursor / Codex adapter 未实现
 - spec 工具中立（兼容 OpenSpec、Superpowers 或不用任何 spec 工具）
 - 以脚手架方式交付（`/specguard:init`），不是日常 CLI
 
@@ -74,6 +74,6 @@ claude --plugin-dir dist/claude/specguard-default -p '/specguard:init --ai claud
 ```
 
 参考：
-- [docs/specguard/design.md](docs/specguard/design.md) — 活文档架构文档
+- [docs/specguard/design.md](docs/specguard/design.md) — 活架构文档
 - [docs/specguard/decisions/](docs/specguard/decisions/) — 架构决策记录
 - [docs/specguard/specs/](docs/specguard/specs/) — 实施切片 spec
