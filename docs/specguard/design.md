@@ -112,21 +112,15 @@ flowchart TD
 
 ## 5. 命令语义
 
-### 5.1 通用规则
+### 5.1 `/specguard:init`
 
-所有 `/specguard:*` 命令使用 rendered prompt 中的 embedded assets，不在用户项目运行时搜索 plugin 源码目录。需要 Python runtime 时，只能通过 `CLAUDE_PLUGIN_ROOT/runtime` 导入 bundled module。
+`/specguard:init` 解析 `--ai <claude|cursor|codex|generic|auto>`、`--spec <none|openspec|superpowers|auto>`、`--dry-run`。当前只有 Claude adapter 可执行；非 Claude 选项是未来 adapter 留位。init 创建缺失 scaffold、更新 CLAUDE.md marker block、用 tempfile + `specguard.hooks_merge.merge_hooks_file()` 合并 hooks 到 `.claude/settings.json`。
 
-### 5.2 `/specguard:init`
+rendered prompt 使用 embedded assets，不在用户项目运行时搜索 plugin 源码目录；需要 Python runtime 时通过 `CLAUDE_PLUGIN_ROOT/runtime` 导入 bundled module。
 
-`/specguard:init` 解析 `--ai <claude|cursor|codex|generic|auto>`、`--spec <none|openspec|superpowers|auto>`、`--dry-run`。当前只有 Claude adapter 可执行；非 Claude 选项是未来 adapter 留位。init 创建缺失 scaffold、更新 CLAUDE.md marker block、用 tempfile + `specguard.hooks_merge` 合并 hooks 到 `.claude/settings.json`。
-
-### 5.3 `/specguard:check`
+### 5.2 `/specguard:check`
 
 `/specguard:check` 是只读结构治理检查，运行 11 项 structural checks 并输出 error/warning/report。它不接受 `semantic` 模式，不创建 `.specguard/reviews/`，不生成 `prompt.md`、`context.md` 或 `findings-template.md`（见 ADR-0005）。
-
-### 5.4 prompt ↔ runtime Python API
-
-`/specguard:init` prompt 依赖 `specguard.hooks_merge.merge_hooks_file()`。
 
 ## 6. 不变量与安全边界
 
@@ -173,16 +167,5 @@ flowchart TD
 
 ## 8. 不在范围
 
-### 8.1 v0.5+ 留位
-
-- Cursor / Codex / generic adapter。
-- L2 真 Claude 端到端 hook 触发验证（API token 消耗版）。
-- PR bot / GitHub Action 治理报告。
-- 中央 dashboard。
-- 多 agent adapter runtime。
-- upgrade 命令（如未来出现真实跨版本升级痛点重新立 ADR）。
-
-### 8.2 已删除
-
-- `/specguard:check semantic` review package 模式已删除（见 ADR-0005）。不再维护 `.specguard/reviews/`、`prompt.md`、`context.md`、`findings-template.md` 数据契约。
-- `/specguard:upgrade` 命令及相关伪契约已撤回（见 ADR-0007）。不再维护 `.specguard-version`、`.plugin_source`、decisions/README rules marker (`specguard:rules:start/end`)、`.specguard/hooks.snippet.json` 数据契约；`/specguard:check` 不再执行原第 11/12/13 项检查。
+- 非 Claude agent runtime：当前只支持 Claude Code；Cursor / Codex / generic adapter 未实现。
+- 版本升级命令：specguard 不提供 `/specguard:upgrade`；用户从旧版本迁移依赖重新 init（见 ADR-0007）。
