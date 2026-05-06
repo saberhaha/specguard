@@ -1,6 +1,6 @@
 # specguard 设计（Living Architecture）
 
-**Last verified against code**: 05d3cf3
+**Last verified against code**: （待本切片最终 commit 后更新）
 **Authoritative for**: 当前架构、命令语义、数据契约、安全边界
 **ADR 索引**: [decisions/README.md](decisions/README.md)
 
@@ -17,7 +17,7 @@ specguard 是一个项目治理脚手架：把 living design、ADR、spec discip
 - 交付治理 scaffold，不接管用户项目的业务代码生成。
 - 约束 AI 协作流程，不替代 OpenSpec、Superpowers、Spec Kit。
 - 当前唯一可执行 agent adapter 是 Claude Code；Cursor、Codex、generic adapter 是 v0.3+ 留位。
-- 分发方式：Claude Code marketplace（`plugins/<layout>/` git-subdir）为主，GitHub Release tarball 作为 fallback（见 ADR-0008）。
+- 分发方式：GitHub Release tarball（见 ADR-0011）。
 
 ## 2. 端到端流程
 
@@ -25,22 +25,18 @@ specguard 是一个项目治理脚手架：把 living design、ADR、spec discip
 
 ```mermaid
 flowchart TD
-  T[git tag v*] --> CI[CI checkout main]
+  T[git tag v*] --> CI[CI checkout]
   CI --> A[core assets]
-  A --> RP[src/specguard/render.py render plugins/<layout>]
+  A --> RP[src/specguard/render.py]
   L[layout manifest] --> RP
   C[claude adapter manifest] --> RP
-  RP --> PD[plugins/<layout>/ git tracked]
-  PD --> PR[git pull --rebase main]
-  PR --> PC[git commit plugins/]
-  PC --> PP[git push HEAD:main]
-  PP --> RD[render dist/claude/<layout> fallback]
+  RP --> RD[dist/claude/<layout>]
   RD --> M[runtime/specguard/*.py copied]
   M --> TB[release tarball]
   TB --> GR[GitHub Release]
 ```
 
-tag 触发 → CI checkout main → render `plugins/<layout>/` → `pull --rebase main` 防 race → commit + push main → 继续 render `dist/` 并打 tarball 作为 fallback → 发布 GH Release（见 ADR-0008）。
+tag 触发 → CI checkout → render dist/ → build tarball → 发布 GH Release（见 ADR-0003）。
 
 ### 2.2 Init flow
 
@@ -85,11 +81,6 @@ flowchart TD
 
 `src/specguard/render.py` 是 build-time 渲染管线，负责把 `src/specguard/` 下的 `__init__.py` 与 `hooks_merge.py` 复制到 dist 的 `runtime/specguard/`。`src/specguard/hooks_merge.py` 是 runtime-safe Python module，由 `/specguard:init` rendered prompt 通过 `CLAUDE_PLUGIN_ROOT/runtime` 导入（见 ADR-0004）。
 
-### 3.5 marketplace 与 plugins/
-
-- `.claude-plugin/marketplace.json`：Claude Code marketplace 元数据，列出三个 plugin（specguard-default / specguard-superpowers / specguard-openspec-sidecar），每个 plugin 的 `source` 用 `git-subdir` 指向同 repo 的 `plugins/<layout>/`（见 ADR-0008）。
-- `plugins/<layout>/`：CI render 产物的 git tracked 目录，对应三种 layout。**禁止人工编辑**：每次 release tag 触发时 CI 会重新渲染并 force-overwrite 该目录、再 commit + push 回 main。手工修改会在下次 release 时丢失。
-
 ## 4. 数据契约
 
 执行强度分三类：
@@ -107,8 +98,6 @@ flowchart TD
 | 5 | `docs/specguard/design.md` | 用户契约 | 当前架构唯一真相；接口、数据结构、模块边界变更必须同步。 |
 | 6 | spec ADR 判断标题 | 治理强制 | 新 spec 必须含 `## ADR 级别决策识别`，存量文件可按 installed_at 豁免。 |
 | 7 | ADR supersede 引用 | 治理强制 | `Superseded by ADR-NNNN` 的目标 ADR 必须存在。 |
-| 8 | `.claude-plugin/marketplace.json` schema | 机器强制 | 必填 `name="specguard"`、`owner.{name,email}`、`plugins[]` 数组；每个 plugin 必填 `name`、`source.{source="git-subdir",url,path}`、`description`。plugin entry **不写** `version`，避免与 plugin.json.version 双写发散（见 ADR-0008）。 |
-| 9 | `plugins/<layout>/` 结构 | 机器强制 | 必含 `.claude-plugin/plugin.json`、`commands/init.md`、`commands/check.md`、`runtime/specguard/{__init__.py,hooks_merge.py}`、`hooks/settings.json.snippet`、`skills/design-governance/SKILL.md`。`plugin.json.version` 由 render 时从 `core/version` 注入，禁止人工编辑（见 ADR-0008）。 |
 
 ## 5. 命令语义
 
@@ -131,7 +120,6 @@ rendered prompt 使用 embedded assets，不在用户项目运行时搜索 plugi
 - layout/adapter 边界：layout 不实现 agent 行为；adapter 不改变 layout paths。
 - check 只读：`/specguard:check` 不创建 review package 或其他项目文件。
 - specguard 不执行用户项目代码：render、hooks merge 只读写治理文件与 JSON/TOML-like metadata。
-- marketplace plugin path 完整性：`.claude-plugin/marketplace.json` 列出的每个 plugin `source.path` 必须对应一个 git tracked 目录且含合法 `plugin.json`；`tests/test_marketplace_schema.py::test_marketplace_plugin_paths_exist_and_have_plugin_json` 强制保证（见 ADR-0008）。
 - 4 个 specguard hook 的 shell 决策由 pytest test_hook_*.py 强制覆盖（每 hook 一个文件、≥30 个用例）；模型采纳 governance context（SessionStart additionalContext、UserPromptSubmit additionalContext、Stop systemMessage）的实际行为仍需人工 dogfood 或未来 L2 真 Claude 端到端验证（见 ADR-0009）。
 
 ## 7. 测试策略
@@ -144,7 +132,6 @@ rendered prompt 使用 embedded assets，不在用户项目运行时搜索 plugi
 | hooks merge 覆盖用户自定义 hooks | `tests/test_init_merge_hooks.py` |
 | release tarball 缺 runtime | `tests/test_render_basic.py`、`tests/test_release_workflow.py` |
 | layout path 漂移 | 三个 render layout 测试 |
-| `plugins/` 与 `src/` 脱同步导致 marketplace 用户拿到旧版本 | `release.yml` 在 build tarball 之前强制 render+commit+push `plugins/`，`pull --rebase` 防 race；`tests/test_release_workflow.py::test_release_workflow_renders_and_commits_plugins` 断言这个步骤顺序（见 ADR-0008）。 |
 | hooks shell 决策 / governance 触发词覆盖率 | `tests/test_hook_*.py`（每 hook 一个文件，覆盖 SessionStart 法则注入、PreToolUse:Write dated-design 拦截、PreToolUse:Write ADR 命名校验、Stop design 同步提醒、UserPromptSubmit 触发词检测）（见 ADR-0009） |
 | hooks shell 通过但模型忽略 additionalContext / systemMessage | L2 真 Claude 端到端验证延后到未来切片（API token 消耗）；当前依赖人工 dogfood（见 ADR-0009） |
 
@@ -156,7 +143,6 @@ rendered prompt 使用 embedded assets，不在用户项目运行时搜索 plugi
 | hooks merge runtime | `uv run pytest tests/test_init_merge_hooks.py -q` |
 | render/release | `uv run pytest tests/test_render_basic.py tests/test_release_workflow.py -q` |
 | release candidate | `uv run pytest` + render 三 layout |
-| `marketplace.json` schema 修改 | `uv run pytest tests/test_marketplace_schema.py -q`。影响：会让所有 `marketplace add` 用户在下次 update 时重新 resolve plugin source；schema 不向前兼容会导致 plugin install 失败（见 ADR-0008）。 |
 | hooks `settings.json.snippet` 修改 | `uv run pytest tests/test_hook_*.py -q`（如果改的是 hook shell 行为则同步更新对应 `test_hook_*.py` 的断言；strict xfail 用例会主动 fail 提醒同步）（见 ADR-0009）。 |
 
 ### 7.3 未覆盖风险

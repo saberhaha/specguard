@@ -10,24 +10,27 @@ specguard 的定位：
 
 ## 快速开始（用户）
 
-从最新 GitHub Release 下载 Claude 插件 tarball 并解压到固定目录：
+在目标项目目录下运行（需要 curl 和 sh）：
 
 ```bash
-mkdir -p ~/.local/share/specguard/plugins/specguard-default
-curl -L https://github.com/saberhaha/specguard/releases/latest/download/specguard-claude-specguard-default-v0.5.0.tar.gz \
-  | tar -xz -C ~/.local/share/specguard/plugins/specguard-default
+curl -fsSL https://raw.githubusercontent.com/saberhaha/specguard/main/install.sh | sh
 ```
 
-在目标项目（真实 git 仓库）里执行 init：
+或者先下载再运行（指定 layout）：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/saberhaha/specguard/main/install.sh -o install.sh
+sh install.sh specguard-default   # 可选：specguard-default / specguard-superpowers / specguard-openspec-sidecar
+```
+
+安装完成后脚本会打印 init 命令，在目标项目（git 仓库）里执行即可：
 
 ```bash
 claude --plugin-dir ~/.local/share/specguard/plugins/specguard-default \
   -p '/specguard:init --ai claude --spec none'
 ```
 
-`/specguard:init` 会创建 living design / ADR / spec 脚手架、更新 `CLAUDE.md`，并自动合并 hooks 到 `.claude/settings.json`。加 `--dry-run` 可预览而不实际写文件。
-
-随时跑治理检查：
+随时运行治理检查：
 
 ```bash
 claude --plugin-dir ~/.local/share/specguard/plugins/specguard-default \

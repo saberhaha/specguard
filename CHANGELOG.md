@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.6.0 - 2026-05-02
+
+### BREAKING
+
+撤回 marketplace 分发（ADR-0011 supersedes ADR-0008）。
+
+#### 删除
+- `.claude-plugin/marketplace.json`
+- `plugins/specguard-default/`、`plugins/superpowers/`、`plugins/openspec-sidecar/`（git-tracked 渲染产物）
+- `tests/test_marketplace_schema.py`
+- `release.yml` 中的 render+commit+push plugins/ 步骤
+
+#### 新增
+- `install.sh`：一行安装脚本，从 GitHub Release 下载最新 tarball，解压到 `~/.local/share/specguard/plugins/<layout>/`，打印后续 claude 命令。用法：`curl -fsSL .../install.sh | sh`
+
+#### 迁移指引（用 v0.4.0/v0.5.0 marketplace 安装的用户）
+- 用 `install.sh` 重新安装：`curl -fsSL https://raw.githubusercontent.com/saberhaha/specguard/main/install.sh | sh`
+- 项目文件无需修改（CLAUDE.md / decisions / specs 不受影响）
+
 ## v0.5.0 - 2026-05-02
 
 ### Added
