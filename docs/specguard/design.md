@@ -11,7 +11,7 @@
 
 ## 1. 产品定位与边界
 
-specguard 是一个项目治理脚手架：把 living design、ADR、spec discipline、Claude hooks、slash commands 打包成可安装的 Claude Code plugin。
+specguard 是一个项目治理脚手架：通过 Claude Code 的 hooks、slash commands 和 CLAUDE.md 注入，强制 AI 辅助开发遵循 living design / ADR / spec 纪律。
 
 它的边界：
 - 交付治理 scaffold，不接管用户项目的业务代码生成。
@@ -154,4 +154,4 @@ rendered prompt 使用 embedded assets，不在用户项目运行时搜索 plugi
 ## 8. 不在范围
 
 - 非 Claude agent runtime：当前只支持 Claude Code；Cursor / Codex / generic adapter 未实现。
-- 版本升级命令：specguard 不提供 `/specguard:upgrade`；用户从旧版本迁移依赖重新 init（见 ADR-0007）。
+- 版本升级命令：specguard 不提供 `/specguard:upgrade`；用户迁移到新版本重跑 `/specguard:init` 即可（见 ADR-0007）。
