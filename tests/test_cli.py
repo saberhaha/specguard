@@ -14,6 +14,8 @@ from specguard.cli import main
 
 def _git_init(path: Path) -> None:
     subprocess.run(["git", "init", "-q", str(path)], check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], check=True, cwd=path)
+    subprocess.run(["git", "config", "user.name", "test"], check=True, cwd=path)
     subprocess.run(
         ["git", "commit", "--allow-empty", "-m", "init", "-q"],
         check=True, cwd=path,
