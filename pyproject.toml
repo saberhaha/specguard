@@ -10,7 +10,6 @@ dependencies = [
 ]
 
 [project.scripts]
-specguard-render = "specguard.render:main"
 specguard = "specguard.cli:main"
 
 [dependency-groups]

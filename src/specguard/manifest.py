@@ -45,26 +45,3 @@ class LayoutManifest:
             inject_policies=list(data.get("inject_policies") or []),
             detection=data.get("detection") or {},
         )
-
-
-@dataclass
-class AdapterManifest:
-    target: str
-    description: str
-    capabilities: list[str]
-    renders: list[dict[str, Any]]
-
-    @classmethod
-    def load(cls, path: Path) -> "AdapterManifest":
-        data = yaml.safe_load(path.read_text())
-        if not isinstance(data, dict):
-            raise ManifestError(f"adapter manifest must be a mapping: {path}")
-        for key in ("target", "renders"):
-            if key not in data:
-                raise ManifestError(f"adapter manifest missing '{key}': {path}")
-        return cls(
-            target=data["target"],
-            description=data.get("description", ""),
-            capabilities=list(data.get("capabilities") or []),
-            renders=list(data["renders"]),
-        )
