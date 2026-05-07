@@ -33,8 +33,8 @@ def test_load_openspec_sidecar_layout():
 def test_load_claude_adapter():
     m = AdapterManifest.load(REPO / "adapters/claude/manifest.yaml")
     assert m.target == "claude"
-    assert "skills" in m.capabilities
     assert "hooks" in m.capabilities
+    assert not any(r["output"].startswith("commands/") for r in m.renders)
     assert any("plugin.json" in r["output"] for r in m.renders)
 
 
