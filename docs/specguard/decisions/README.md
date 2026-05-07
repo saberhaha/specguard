@@ -17,6 +17,7 @@
 | [0009](0009-hooks-pressure-tests.md) | specguard hooks 的 shell 决策由 pytest 强制覆盖 | Accepted | design §6、§7.1、§7.4、§8.1 |
 | [0010](0010-design-md-deletion-discipline.md) | design.md 减法纪律——每次修改前主动扫除冗余 | Accepted | core/rules/design-sync.md、CLAUDE.md |
 | [0011](0011-withdraw-marketplace-and-add-install-script.md) | 撤回 marketplace 分发并以 install.sh 替代 | Accepted | design §2、§3.5、§4、§6、§7.1、§7.2 |
+| [0012](0012-cli-first.md) | CLI-first 方案——以 `specguard` CLI 替代 slash command | Accepted | ADR-0004、ADR-0011、design §1/§2/§3/§5/§8 |
 
 后续若出现以下情况新增 ADR：
 
