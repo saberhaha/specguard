@@ -149,7 +149,7 @@ def init(layout: str, ai: str, spec: str, dry_run: bool) -> None:
     results.append(_update_claude_md(project_root, block, dry_run))
 
     # --- hooks ---
-    hooks_tpl = repo / "adapters/claude/plugin/hooks/settings.json.snippet.tpl"
+    hooks_tpl = repo / "core/hooks/settings.json.snippet.tpl"
     env = Environment(loader=BaseLoader(), undefined=StrictUndefined)
     env.filters["regex_escape"] = lambda s: re.escape(str(s)).replace("\\", "\\\\")
     snippet_text = env.from_string(hooks_tpl.read_text(encoding="utf-8")).render(**context)

@@ -22,7 +22,7 @@ def rendered_snippet() -> dict:
     the render pipeline (which was removed in v0.8.0 cleanup).
     """
     layout_m = LayoutManifest.load(REPO / "layouts/specguard-default/manifest.yaml")
-    tpl_path = REPO / "adapters/claude/plugin/hooks/settings.json.snippet.tpl"
+    tpl_path = REPO / "core/hooks/settings.json.snippet.tpl"
 
     env = Environment(loader=BaseLoader(), undefined=StrictUndefined)
     env.filters["regex_escape"] = lambda s: re.escape(str(s)).replace("\\", "\\\\")

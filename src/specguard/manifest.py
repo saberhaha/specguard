@@ -19,7 +19,6 @@ class LayoutManifest:
     name: str
     description: str
     paths: dict[str, str]
-    inject_policies: list[str] = field(default_factory=list)
     detection: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -42,6 +41,5 @@ class LayoutManifest:
             name=data["name"],
             description=data.get("description", ""),
             paths=paths,
-            inject_policies=list(data.get("inject_policies") or []),
             detection=data.get("detection") or {},
         )
