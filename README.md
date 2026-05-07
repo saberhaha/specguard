@@ -10,34 +10,26 @@ specguard 的定位：
 
 ## 快速开始（用户）
 
-在目标项目目录下运行（需要 curl 和 sh）：
+安装 specguard CLI（需要 Python / pip）：
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/saberhaha/specguard/main/install.sh | sh
 ```
 
-或者先下载再运行（指定 layout）：
+在目标项目（git 仓库）里初始化治理脚手架：
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/saberhaha/specguard/main/install.sh -o install.sh
-sh install.sh specguard-default   # 可选：specguard-default / specguard-superpowers / specguard-openspec-sidecar
-```
-
-安装完成后脚本会打印 init 命令，在目标项目（git 仓库）里执行即可：
-
-```bash
-claude --plugin-dir ~/.local/share/specguard/plugins/specguard-default \
-  -p '/specguard:init --ai claude --spec none'
+cd your-project
+specguard init
 ```
 
 随时运行治理检查：
 
 ```bash
-claude --plugin-dir ~/.local/share/specguard/plugins/specguard-default \
-  -p '/specguard:check'
+specguard check
 ```
 
-可用 layout：
+可用 layout（`--layout` 参数，默认 `specguard-default`）：
 - `specguard-default` — design/ADR/spec 放在 `docs/specguard/`
 - `specguard-superpowers` — design/ADR/spec 放在 `docs/superpowers/`
 - `specguard-openspec-sidecar` — design/ADR 放在 `docs/specguard/`，specs 放在 `openspec/`
@@ -57,20 +49,19 @@ OpenSpec / Spec Kit / Superpowers 专注于驱动单次 AI 编码会话。specgu
 
 | 项目 | 状态 |
 |---|---|
-| Claude Code 插件（tarball 安装） | 可用 |
+| Claude Code 插件（CLI 安装） | 可用 |
 | Cursor / Codex 适配器 | 未实现 |
 
 ## 开发
 
-从源码构建插件用于本地 dogfood：
+从源码本地开发：
 
 ```bash
 git clone https://github.com/saberhaha/specguard.git
 cd specguard
 uv sync
 uv run pytest
-uv run specguard-render --target claude --layout specguard-default --out dist/claude/specguard-default
-claude --plugin-dir dist/claude/specguard-default -p '/specguard:init --ai claude --spec none'
+uv run specguard init   # 在任意 git 项目里测试
 ```
 
 参考：

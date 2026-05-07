@@ -1,5 +1,26 @@
 # Changelog
 
+## v0.7.0 - 2026-05-07
+
+### BREAKING
+
+以独立 Python CLI 替代 Claude Code slash command（ADR-0012）。
+
+#### 新增
+- `specguard init [--layout] [--ai] [--spec] [--dry-run]`：直接写 scaffold 文件（design.md / decisions / specs 模板 / CLAUDE.md block）+ 合并 hooks 到 `.claude/settings.json`。不依赖 `CLAUDE_PLUGIN_ROOT` 或 `--plugin-dir`。
+- `specguard check [--layout]`：Python 实现 11 项结构检查，exit code 0/1，可进 CI。
+- `src/specguard/cli.py`：CLI 入口，依赖 click>=8.0。
+
+#### 删除
+- `/specguard:init` 和 `/specguard:check` slash commands（`core/command-prompts/`、`adapters/claude/plugin/commands/`）
+- design-governance skill（`adapters/claude/plugin/skills/`）
+- 三个 layout plugin tarball（release 改为发 Python sdist）
+
+#### 迁移指引（从 v0.6.x 升级）
+- 用 `install.sh` 重新安装：`curl -fsSL https://raw.githubusercontent.com/saberhaha/specguard/main/install.sh | sh`
+- 之后用 `specguard init` 代替 `claude --plugin-dir ... -p '/specguard:init'`
+- hooks 已在 init 时合并进 `.claude/settings.json`，重跑 `specguard init` 可更新
+
 ## v0.6.0 - 2026-05-02
 
 ### BREAKING

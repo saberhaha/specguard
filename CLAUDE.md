@@ -2,12 +2,11 @@
 ## SpecGuard governance rules
 
 ### Five non-negotiable laws
-1. `docs/specguard/design.md` 是当前架构唯一真相；写代码前必须先读它。
-2. 决策档案在 `docs/specguard/decisions/`；写新 ADR 前必须先查看既有 ADR。
-3. 禁止新建 dated design 文件（如 `*-design.md`）；新切片写 `docs/specguard/specs/<topic>-spec.md`，架构变更直接更新 design.md。
+1. `{{ paths.design }}` 是当前架构唯一真相；写代码前必须先读它。
+2. 决策档案在 `{{ paths.decisions_dir }}/`；写新 ADR 前必须先查看既有 ADR。
+3. 禁止新建 dated design 文件（如 `*-design.md`）；新切片写 `{{ paths.specs_dir }}/<topic>-spec.md`，架构变更直接更新 design.md。
 4. ADR 只用于五类硬条件：接口语义、数据格式、跨模块依赖、外部依赖、推翻既有设计；其他默认不写。
-5. 接口/数据结构/模块边界变更必须同步 `docs/specguard/design.md`；命中硬条件时还要写 ADR。
-
+5. 接口/数据结构/模块边界变更必须同步 `{{ paths.design }}`；命中硬条件时还要写 ADR。
 
 ### ADR judgement checklist
 对本次需求的每个改动点，逐条匹配五条硬条件：
@@ -29,11 +28,10 @@
 - 候选 ADR + 灰色地带（请用户拍板）
 - 不需要 ADR 的改动点 + 理由
 
-
 ### design.md sync rules
-- 接口、数据结构、模块边界变化 → 必须同步 `docs/specguard/design.md` 对应段落（默认动作，不询问）。
-- 编辑 `docs/specguard/design.md` 后更新顶部 `Last verified against code` 字段为当前 commit hash。
-- 不允许在 `docs/specguard/design.md` 中保留与代码不一致的陈述。
+- 接口、数据结构、模块边界变化 → 必须同步 `{{ paths.design }}` 对应段落（默认动作，不询问）。
+- 编辑 `{{ paths.design }}` 后更新顶部 `Last verified against code` 字段为当前 commit hash。
+- 不允许在 `{{ paths.design }}` 中保留与代码不一致的陈述。
 - mermaid 图与文字描述若不一致，文字为准，同步修图。
-- 写 ADR 后，在 `docs/specguard/design.md` 对应章节末尾追加 `（见 ADR-NNNN）`，并在 `docs/specguard/decisions/README.md` 索引表加一行。
+- 写 ADR 后，在 `{{ paths.design }}` 对应章节末尾追加 `（见 ADR-NNNN）`，并在 `{{ paths.decisions_dir }}/README.md` 索引表加一行。
 <!-- specguard:end -->

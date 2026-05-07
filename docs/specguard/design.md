@@ -1,6 +1,6 @@
 # specguard 设计（Living Architecture）
 
-**Last verified against code**: 0d0d312
+**Last verified against code**: bd81f2c
 **Authoritative for**: 当前架构、命令语义、数据契约、安全边界
 **ADR 索引**: [decisions/README.md](decisions/README.md)
 
@@ -11,7 +11,7 @@
 
 ## 1. 产品定位与边界
 
-specguard 是一个项目治理脚手架：通过 Claude Code 的 hooks、slash commands 和 CLAUDE.md 注入，强制 AI 辅助开发遵循 living design / ADR / spec 纪律。
+specguard 是一个项目治理脚手架：通过 CLI（specguard init / specguard check）、Claude hooks 和 CLAUDE.md 注入，强制 AI 辅助开发遵循 living design / ADR / spec 纪律。
 
 它的边界：
 - 交付治理 scaffold，不接管用户项目的业务代码生成。
@@ -27,47 +27,42 @@ specguard 是一个项目治理脚手架：通过 Claude Code 的 hooks、slash 
 flowchart TD
   T["git tag v*"] --> CI[CI checkout]
   CI --> A[core assets]
-  A --> RP["src/specguard/render.py"]
-  L[layout manifest] --> RP
-  C[claude adapter manifest] --> RP
-  RP --> RD["dist/claude/{layout}"]
-  RD --> M["runtime/specguard/*.py copied"]
-  M --> TB[release tarball]
-  TB --> GR[GitHub Release]
+  A --> B["uv build (Python sdist)"]
+  B --> GR[GitHub Release]
 ```
 
-tag 触发 → CI checkout → render dist/ → build tarball → 发布 GH Release（见 ADR-0003）。
+tag 触发 → CI checkout → uv build Python sdist → 发布 GH Release（见 ADR-0003）。
 
 ### 2.2 Init flow
 
 ```mermaid
 flowchart TD
-  A["/specguard:init"] --> B["parse --ai / --spec / --dry-run"]
-  B --> C[confirm rendered layout paths]
-  C --> D[create missing design / decisions / spec templates]
-  C --> E[insert or replace CLAUDE.md specguard block]
-  C --> F[write hooks snippet to tempfile]
-  F --> G["specguard.hooks_merge merges .claude/settings.json"]
+  A["specguard init"] --> B["load layout manifest"]
+  B --> C[create scaffold files]
+  B --> D[update CLAUDE.md specguard block]
+  B --> E[merge hooks into .claude/settings.json]
 ```
+
+specguard init 读取 layout manifest → 创建缺失治理文件 → 更新 CLAUDE.md block → 调用 hooks_merge 合并 hooks（见 ADR-0012）。
 
 ### 2.3 Check flow
 
 ```mermaid
 flowchart TD
-  A["/specguard:check"] --> B[read project governance files]
+  A["specguard check"] --> B[read project files]
   B --> C[run 11 structural checks]
   C --> D{errors?}
-  D -->|yes| E[print error report]
-  D -->|no| F[print warning / success report]
-  E --> G[no project writes]
-  F --> G
+  D -->|yes| E["print report + exit 1"]
+  D -->|no| F["print report + exit 0"]
 ```
+
+specguard check 是只读结构检查，11 项，errors > 0 时 exit 1（可进 CI）。
 
 ## 3. 架构分层
 
 ### 3.1 core
 
-`core/` 保存 agent-neutral、layout-neutral 治理资产：version、rules、templates、command prompts、policies。
+`core/` 保存 agent-neutral、layout-neutral 治理资产：version、rules、templates、policies。
 
 ### 3.2 layouts
 
@@ -75,18 +70,18 @@ flowchart TD
 
 ### 3.3 adapters/claude
 
-`adapters/claude/` 渲染 Claude Code plugin：plugin.json、design-governance skill、init/check commands、hooks snippet。plugin name 固定为 `specguard`，没有 `commandNamespace` 字段，因此命令固定为 `/specguard:init`、`/specguard:check`（见 ADR-0001）。
+`adapters/claude/` 渲染 Claude Code plugin：plugin.json、hooks snippet。plugin name 固定为 `specguard`（见 ADR-0001）。
 
 ### 3.4 src/specguard
 
-`src/specguard/render.py` 是 build-time 渲染管线，负责把 `src/specguard/` 下的 `__init__.py` 与 `hooks_merge.py` 复制到 dist 的 `runtime/specguard/`。`src/specguard/hooks_merge.py` 是 runtime-safe Python module，由 `/specguard:init` rendered prompt 通过 `CLAUDE_PLUGIN_ROOT/runtime` 导入（见 ADR-0004）。
+`src/specguard/render.py` 是 build-time 渲染管线，负责把 `src/specguard/` 下的 `__init__.py` 与 `hooks_merge.py` 复制到 dist 的 `runtime/specguard/`。`src/specguard/hooks_merge.py` 是 runtime-safe Python module，由 `specguard init` CLI 通过直接 import 调用（见 ADR-0004）。`src/specguard/cli.py` 是 CLI 入口，提供 `specguard init` 和 `specguard check` 两个子命令，依赖 click>=8.0（见 ADR-0012）。
 
 ## 4. 数据契约
 
 执行强度分三类：
 
 - **机器强制**：pytest、render、runtime module 或 hooks 能稳定执行。
-- **治理强制**：`/specguard:check` 或 Claude prompt 明确检查并报告。
+- **治理强制**：`specguard check` 或 Claude prompt 明确检查并报告。
 - **用户契约**：由文档和 ADR 约束，当前不自动执行。
 
 | # | 契约 | 强度 | 当前语义 |
@@ -101,15 +96,13 @@ flowchart TD
 
 ## 5. 命令语义
 
-### 5.1 `/specguard:init`
+### 5.1 `specguard init`
 
-`/specguard:init` 解析 `--ai <claude|cursor|codex|generic|auto>`、`--spec <none|openspec|superpowers|auto>`、`--dry-run`。当前只有 Claude adapter 可执行；非 Claude 选项是未来 adapter 留位。init 创建缺失 scaffold、更新 CLAUDE.md marker block、用 tempfile + `specguard.hooks_merge.merge_hooks_file()` 合并 hooks 到 `.claude/settings.json`。
+`specguard init [--layout specguard-default] [--ai claude] [--spec none] [--dry-run]`：读取 layout manifest 获取 paths，创建缺失 scaffold 文件（design.md 模板、decisions/README.md、decisions/TEMPLATE.md、specs/TEMPLATE.md），更新 CLAUDE.md specguard block，调用 `hooks_merge.merge_hooks_file()` 合并 hooks 到 `.claude/settings.json`。`--dry-run` 打印计划不写文件。不依赖 `CLAUDE_PLUGIN_ROOT`（见 ADR-0012）。
 
-rendered prompt 使用 embedded assets，不在用户项目运行时搜索 plugin 源码目录；需要 Python runtime 时通过 `CLAUDE_PLUGIN_ROOT/runtime` 导入 bundled module。
+### 5.2 `specguard check`
 
-### 5.2 `/specguard:check`
-
-`/specguard:check` 是只读结构治理检查，运行 11 项 structural checks 并输出 error/warning/report。它不接受 `semantic` 模式，不创建 `.specguard/reviews/`，不生成 `prompt.md`、`context.md` 或 `findings-template.md`（见 ADR-0005）。
+`specguard check [--layout specguard-default]`：只读结构治理检查，运行 11 项 structural checks，输出 ✓/⚠️/❌ 格式报告，errors > 0 时 exit 1，可进 CI。不创建任何项目文件（见 ADR-0005）。
 
 ## 6. 不变量与安全边界
 
@@ -118,7 +111,7 @@ rendered prompt 使用 embedded assets，不在用户项目运行时搜索 plugi
 - hooks 只按 `statusMessage` 前缀 `specguard:` 识别 specguard entries。
 - release/runtime 边界：release tarball 必须携带 `runtime/specguard/`。
 - layout/adapter 边界：layout 不实现 agent 行为；adapter 不改变 layout paths。
-- check 只读：`/specguard:check` 不创建 review package 或其他项目文件。
+- check 只读：`specguard check` 不创建 review package 或其他项目文件。
 - specguard 不执行用户项目代码：render、hooks merge 只读写治理文件与 JSON/TOML-like metadata。
 - 4 个 specguard hook 的 shell 决策由 pytest `tests/test_hook_*.py` 强制覆盖（见 ADR-0009）；模型采纳 governance context 的实际行为仍需人工 dogfood 或未来 L2 验证。
 
@@ -128,7 +121,6 @@ rendered prompt 使用 embedded assets，不在用户项目运行时搜索 plugi
 
 | 风险 | 测试防线 |
 |---|---|
-| rendered command 残留 inject marker | `tests/test_render_claude_default.py` |
 | hooks merge 覆盖用户自定义 hooks | `tests/test_init_merge_hooks.py` |
 | release tarball 缺 runtime | `tests/test_render_basic.py`、`tests/test_release_workflow.py` |
 | layout path 漂移 | 三个 render layout 测试 |
@@ -144,13 +136,13 @@ rendered prompt 使用 embedded assets，不在用户项目运行时搜索 plugi
 | render/release | `uv run pytest tests/test_render_basic.py tests/test_release_workflow.py -q` |
 | release candidate | `uv run pytest` + render 三 layout |
 | hooks `settings.json.snippet` 修改 | `uv run pytest tests/test_hook_*.py -q`（见 ADR-0009） |
+| `cli.py` 修改 | `uv run pytest tests/test_cli.py -q` |
 
 ### 7.3 未覆盖风险
 
-- `CLAUDE_PLUGIN_ROOT` 的暴露由 Claude Code runtime 决定，pytest 无法覆盖。
 - 模型是否真正遵循 SessionStart / UserPromptSubmit / Stop 注入的 governance context 是 LLM 行为问题，pytest 无法覆盖；hook shell 决策本身已由 `tests/test_hook_*.py` 强制（见 ADR-0009）。
 
 ## 8. 不在范围
 
-- 非 Claude agent runtime：当前只支持 Claude Code；Cursor / Codex / generic adapter 未实现。
-- 版本升级命令：specguard 不提供 `/specguard:upgrade`；用户迁移到新版本重跑 `/specguard:init` 即可（见 ADR-0007）。
+- 非 Claude agent runtime：Cursor / Codex / generic adapter（命令提示词适配，目前未实现）。
+- 版本升级命令：specguard 不提供升级命令；用户迁移到新版本重跑 `specguard init` 即可（见 ADR-0007）。
