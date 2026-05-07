@@ -23,15 +23,8 @@ jobs:
             exit 1
           fi
       - run: uv run pytest
-      - name: Render and package layouts
-        run: |
-          version=$(cat core/version)
-          mkdir -p release
-          for layout in specguard-default superpowers openspec-sidecar; do
-            out="dist/claude/${layout}"
-            uv run specguard-render --target claude --layout "${layout}" --out "${out}"
-            tar -czf "release/specguard-claude-${layout}-v${version}.tar.gz" -C "${out}" .
-          done
+      - name: Build Python package
+        run: uv build --out-dir release/
       - uses: softprops/action-gh-release@v2
         with:
           files: release/*.tar.gz
