@@ -1,6 +1,6 @@
 # specguard 设计（Living Architecture）
 
-**Last verified against code**: bd81f2c
+**Last verified against code**: ad7c3fb
 **Authoritative for**: 当前架构、命令语义、数据契约、安全边界
 **ADR 索引**: [decisions/README.md](decisions/README.md)
 
